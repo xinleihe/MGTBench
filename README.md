@@ -22,7 +22,7 @@ Currently, we support the following methods:
 - SQuAD1;
 - NarrativeQA; (For NarrativeQA, you can download the dataset from [Google Drive](https://drive.google.com/file/d/1tul8WeWqubyRlxLeJ5L3igfaL6VNSuef/view?usp=share_link).)
 
-## Instasllation
+## Installation
 ```
 git clone https://github.com/xinleihe/MGTBench.git;
 cd MGTBench;
