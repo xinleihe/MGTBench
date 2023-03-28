@@ -4,7 +4,7 @@ MGTBench provides the reference implementations of different machine-generated t
 It is still under continuous development and we will include more detection methods as well as analysis tools in the future.
 
 
-## Suopported Methods
+## Supported Methods
 Currently, we support the following methods:
 - Metric-based methods:
     - Log-Likelihood;
@@ -17,7 +17,7 @@ Currently, we support the following methods:
     - Openai Detector;
     - ChatGPT Detector;
 
-## Suopported Datasets
+## Supported Datasets
 - TruthfulQA;
 - SQuAD1;
 - NarrativeQA; (For NarrativeQA, you can download the dataset from [Google Drive](https://drive.google.com/file/d/1tul8WeWqubyRlxLeJ5L3igfaL6VNSuef/view?usp=share_link).)
