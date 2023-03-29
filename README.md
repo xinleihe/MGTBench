@@ -40,3 +40,15 @@ Note that you can also specify your own datasets on ``dataset_loader.py``.
 
 ## Authors
 The tool is designed and developed by Xinlei He (CISPA), Xinyue Shen (CISPA), Zeyuan Chen (Individual Researcher), Michael Backes (CISPA), and Yang Zhang (CISPA).
+
+## Cite
+If you use BGTBench for your research, please cite [MGTBench: Benchmarking Machine-Generated Text Detection](https://arxiv.org/abs/2303.14822).
+
+```bibtex
+@article{HSCBZ23,
+author = {Xinlei He and Xinyue Shen and Zeyuan Chen and Michael Backes and Yang Zhang},
+title = {{MGTBench: Benchmarking Machine-Generated Text Detection}},
+journal = {{CoRR abs/2303.14822}},
+year = {2023}
+}
+```
