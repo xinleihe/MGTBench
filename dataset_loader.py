@@ -112,8 +112,6 @@ def load_TruthfulQA(cache_dir):
     }
 
     total_num = len(res)
-    print(len(res))
-    # total_num = 10
     for i in tqdm.tqdm(range(total_num), desc="parsing data"):
         if i < total_num * 0.8:
             data_partition = 'train'
@@ -138,7 +136,6 @@ def load_TruthfulQA_adv1(cache_dir):
     a_human = f['Best Answer'].tolist()
     a_chat = f['chatgpt_answer'].tolist()
     c = f['Category'].tolist()
-    # a_chat = [process_text_truthfulqa_adv(_) for _ in a_chat]
     res = []
     for i in range(len(q)):
         if len(a_human[i].split()) > 1 and len(a_chat[i].split()) > 1:
@@ -159,8 +156,6 @@ def load_TruthfulQA_adv1(cache_dir):
     }
 
     total_num = len(res)
-    print(len(res))
-    # total_num = 10
     for i in tqdm.tqdm(range(total_num), desc="parsing data"):
         if i < total_num * 0.8:
             data_partition = 'train'
@@ -207,8 +202,6 @@ def load_TruthfulQA_adv2(cache_dir):
     }
 
     total_num = len(res)
-    print(len(res))
-    # total_num = 10
     for i in tqdm.tqdm(range(total_num), desc="parsing data"):
         if i < total_num * 0.8:
             data_partition = 'train'
@@ -251,8 +244,6 @@ def load_SQuAD1(cache_dir):
     }
 
     total_num = len(res)
-    print(len(res))
-    # total_num = 20
     for i in tqdm.tqdm(range(total_num), desc="parsing data"):
         if i < total_num * 0.8:
             data_partition = 'train'
@@ -299,8 +290,6 @@ def load_SQuAD2(cache_dir):
     }
 
     total_num = len(res)
-    print(len(res))
-    # total_num = 10
     for i in tqdm.tqdm(range(total_num), desc="parsing data"):
         if i < total_num * 0.8:
             data_partition = 'train'
@@ -341,8 +330,6 @@ def load_NarrativeQA(cache_dir):
     }
 
     total_num = len(res)
-    print(len(res))
-    # total_num = 10
     for i in tqdm.tqdm(range(total_num), desc="parsing data"):
         if i < total_num * 0.8:
             data_partition = 'train'

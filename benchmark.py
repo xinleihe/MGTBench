@@ -7,6 +7,7 @@ from methods.utils import load_base_model
 from methods.supervised import run_supervised_experiment
 from methods.utils import load_base_model_and_tokenizer
 from methods.detectgpt import run_detectgpt_experiments
+from methods.gptzero import run_gptzero_experiment
 from methods.metric_based import get_ll, get_rank, get_entropy, get_rank_GLTR, run_threshold_experiment, run_GLTR_experiment
 
 if __name__ == '__main__':
@@ -36,6 +37,10 @@ if __name__ == '__main__':
     parser.add_argument('--mask_top_p', type=float, default=1.0)
     parser.add_argument('--random_fills', action='store_true')
     parser.add_argument('--random_fills_tokens', action='store_true')
+
+    # params for GPTZero
+    parser.add_argument('--gptzero_key', type=str, default="")
+
     args = parser.parse_args()
 
     DEVICE = args.DEVICE
@@ -105,9 +110,11 @@ if __name__ == '__main__':
     outputs.append(run_GLTR_experiment(data, GLTR_criterion, "rank_GLTR"))
     outputs.append(run_supervised_experiment(data, model='roberta-base-openai-detector',
                    cache_dir=cache_dir, batch_size=batch_size, DEVICE=DEVICE))
-    # baseline_outputs.append(run_supervised_experiment(data, model='roberta-large-openai-detector'))
     outputs.append(run_supervised_experiment(data, model='Hello-SimpleAI/chatgpt-detector-roberta',
                    cache_dir=cache_dir, batch_size=batch_size, DEVICE=DEVICE, pos_bit=1))
+
+    # # run GPTZero: pleaze specify your gptzero_key in the args
+    # outputs.append(run_gptzero_experiment(data, api_key=args.gptzero_key))
 
     # run DetectGPT
     outputs.append(run_detectgpt_experiments(

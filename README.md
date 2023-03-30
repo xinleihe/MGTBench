@@ -5,7 +5,7 @@ It is still under continuous development and we will include more detection meth
 
 
 ## Supported Methods
-Currently, we support the following methods:
+Currently, we support the following methods (continuous updating):
 - Metric-based methods:
     - Log-Likelihood;
     - Rank;
@@ -16,6 +16,7 @@ Currently, we support the following methods:
 - Model-based methods:
     - Openai Detector;
     - ChatGPT Detector;
+    - GPTZero;
 
 ## Supported Datasets
 - TruthfulQA;
