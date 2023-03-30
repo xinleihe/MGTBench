@@ -43,7 +43,7 @@ Note that you can also specify your own datasets on ``dataset_loader.py``.
 The tool is designed and developed by Xinlei He (CISPA), Xinyue Shen (CISPA), Zeyuan Chen (Individual Researcher), Michael Backes (CISPA), and Yang Zhang (CISPA).
 
 ## Cite
-If you use BGTBench for your research, please cite [MGTBench: Benchmarking Machine-Generated Text Detection](https://arxiv.org/abs/2303.14822).
+If you use MGTBench for your research, please cite [MGTBench: Benchmarking Machine-Generated Text Detection](https://arxiv.org/abs/2303.14822).
 
 ```bibtex
 @article{HSCBZ23,
