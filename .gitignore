@@ -164,6 +164,7 @@ cython_debug/
 *.pkl
 *.ipynb
 *.txt
+datasets/*
 
 # *.csv
 NarrativeQA_chatgpt.csv

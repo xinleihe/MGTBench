@@ -7,21 +7,23 @@ It is still under continuous development and we will include more detection meth
 ## Supported Methods
 Currently, we support the following methods (continuous updating):
 - Metric-based methods:
-    - Log-Likelihood;
-    - Rank;
-    - Log-Rank;
-    - Entropy;
-    - GLTR Test 2 Features (Rank Counting);
-    - DetectGPT;
+    - Log-Likelihood [Ref](https://arxiv.org/abs/1908.09203);
+    - Rank [Ref](https://arxiv.org/abs/1906.04043);
+    - Log-Rank [Ref](https://arxiv.org/abs/2301.11305);
+    - Entropy [Ref](https://arxiv.org/abs/1906.04043);
+    - GLTR Test 2 Features (Rank Counting) [Ref](https://arxiv.org/abs/1906.04043);
+    - DetectGPT [Ref](https://arxiv.org/abs/2301.11305);
 - Model-based methods:
-    - Openai Detector;
-    - ChatGPT Detector;
-    - GPTZero;
+    - OpenAI Detector [Ref](https://arxiv.org/abs/1908.09203);
+    - ChatGPT Detector [Ref](https://arxiv.org/abs/2301.07597);
+    - GPTZero [Ref](https://gptzero.me/);
+    - LM Detector [Ref](https://arxiv.org/abs/1911.00650);
 
 ## Supported Datasets
 - TruthfulQA;
 - SQuAD1;
-- NarrativeQA; (For NarrativeQA, you can download the dataset from [Google Drive](https://drive.google.com/file/d/1tul8WeWqubyRlxLeJ5L3igfaL6VNSuef/view?usp=share_link).)
+- NarrativeQA; 
+For datasets, you can download them from [Google Drive](https://drive.google.com/drive/folders/1p4iBeM4r-sUKe8TnS4DcYlxvQagcmola?usp=sharing).)
 
 ## Installation
 ```
@@ -34,8 +36,11 @@ conda activate MGTBench;
 ## Usage
 To run the benchmark on the SQuAD1 dataset: 
 ```
-python benchmark.py --dataset SQuAD1 --base_model_name gpt2-medium --mask_filling_model_name t5-large
-```
+# Distinguish Human vs. ChatGPT:
+python benchmark.py --dataset SQuAD1 --detectLLM ChatGPT
+
+# Text attribution:
+python attribution_benchmark.py --dataset SQuAD1
 
 Note that you can also specify your own datasets on ``dataset_loader.py``.
 
