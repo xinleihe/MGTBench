@@ -164,11 +164,9 @@ cython_debug/
 *.pkl
 *.ipynb
 *.txt
-datasets/*
+# datasets/*
 
-# *.csv
-NarrativeQA_chatgpt.csv
-*LLMs.csv
+*.csv
 adv_attack.py
 run.py
 benchmark_*.py
