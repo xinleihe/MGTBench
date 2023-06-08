@@ -45,17 +45,27 @@ def process_text_truthfulqa_adv(text):
     return text
 
 
-def load_TruthfulQA(detectLLM):
+def load_TruthfulQA(cache_dir):
     f = pd.read_csv("datasets/TruthfulQA_LLMs.csv")
     q = f['Question'].tolist()
     a_human = f['Best Answer'].tolist()
-    a_chat = f[f'{detectLLM}_answer'].fillna("").tolist()
+    mgt_text_list = []
+    for detectLLM in ["ChatGPT", "ChatGLM", "Dolly", "ChatGPT-turbo", "GPT4", "StableLM"]:
+        mgt_text_list.append(f[f'{detectLLM}_answer'].fillna("").tolist())
     c = f['Category'].tolist()
 
     res = []
     for i in range(len(q)):
-        if len(a_human[i].split()) > 1 and len(a_chat[i].split()) > 1 and len(a_chat[i]) < 2000:
-            res.append([q[i], a_human[i], a_chat[i], c[i]])
+        if len(a_human[i].split()) <= 1:
+            continue
+        flag = 1
+        for mgt_text in mgt_text_list:
+            if len(mgt_text[i].split()) <= 1 or len(mgt_text[i]) >= 2000:
+                flag = 0
+                break
+        if flag:
+            res.append([q[i], a_human[i], mgt_text_list[0][i], mgt_text_list[1][i], mgt_text_list[2]
+                       [i], mgt_text_list[3][i], mgt_text_list[4][i], mgt_text_list[5][i], c[i]])
 
     data_new = {
         'train': {
@@ -81,29 +91,35 @@ def load_TruthfulQA(detectLLM):
             data_partition = 'train'
         else:
             data_partition = 'test'
-        data_new[data_partition]['text'].append(
-            process_spaces(res[index_list[i]][1]))
-        data_new[data_partition]['label'].append(0)
-        data_new[data_partition]['text'].append(
-            process_spaces(res[index_list[i]][2]))
-        data_new[data_partition]['label'].append(1)
 
-        data_new[data_partition]['category'].append(res[index_list[i]][3])
-        data_new[data_partition]['category'].append(res[index_list[i]][3])
+        for j in range(1, 8):
+            data_new[data_partition]['text'].append(
+                process_spaces(res[index_list[i]][j]))
+            data_new[data_partition]['label'].append(j-1)
 
     return data_new
 
 
-def load_SQuAD1(detectLLM):
+def load_SQuAD1(cache_dir):
     f = pd.read_csv("datasets/SQuAD1_LLMs.csv")
     q = f['Question'].tolist()
     a_human = [eval(_)['text'][0] for _ in f['answers'].tolist()]
-    a_chat = f[f'{detectLLM}_answer'].fillna("").tolist()
+    mgt_text_list = []
+    for detectLLM in ["ChatGPT", "ChatGLM", "Dolly", "ChatGPT-turbo", "GPT4", "StableLM"]:
+        mgt_text_list.append(f[f'{detectLLM}_answer'].fillna("").tolist())
 
     res = []
     for i in range(len(q)):
-        if len(a_human[i].split()) > 1 and len(a_chat[i].split()) > 1:
-            res.append([q[i], a_human[i], a_chat[i]])
+        if len(a_human[i].split()) <= 1:
+            continue
+        flag = 1
+        for mgt_text in mgt_text_list:
+            if len(mgt_text[i].split()) <= 1:
+                flag = 0
+                break
+        if flag:
+            res.append([q[i], a_human[i], mgt_text_list[0][i], mgt_text_list[1][i],
+                       mgt_text_list[2][i], mgt_text_list[3][i], mgt_text_list[4][i], mgt_text_list[5][i]])
 
     data_new = {
         'train': {
@@ -128,27 +144,34 @@ def load_SQuAD1(detectLLM):
         else:
             data_partition = 'test'
 
-        data_new[data_partition]['text'].append(
-            process_spaces(res[index_list[i]][1]))
-        data_new[data_partition]['label'].append(0)
-        data_new[data_partition]['text'].append(
-            process_spaces(res[index_list[i]][2]))
-        data_new[data_partition]['label'].append(1)
+        for j in range(1, 8):
+            data_new[data_partition]['text'].append(
+                process_spaces(res[index_list[i]][j]))
+            data_new[data_partition]['label'].append(j-1)
     return data_new
 
 
-def load_NarrativeQA(detectLLM):
+def load_NarrativeQA(cache_dir):
     f = pd.read_csv("datasets/NarrativeQA_LLMs.csv")
     q = f['Question'].tolist()
     a_human = f['answers'].tolist()
     a_human = [_.split(";")[0] for _ in a_human]
-    a_chat = f[f'{detectLLM}_answer'].fillna("").tolist()
+    mgt_text_list = []
+    for detectLLM in ["ChatGPT", "ChatGLM", "Dolly", "ChatGPT-turbo", "GPT4", "StableLM"]:
+        mgt_text_list.append(f[f'{detectLLM}_answer'].fillna("").tolist())
 
     res = []
     for i in range(len(q)):
-        if len(a_human[i].split()) > 1 and len(a_chat[i].split()) > 1 and len(a_human[i].split()) < 150 and len(a_chat[i].split()) < 150:
-
-            res.append([q[i], a_human[i], a_chat[i]])
+        if len(a_human[i].split()) <= 1 or len(a_human[i].split()) >= 150:
+            continue
+        flag = 1
+        for mgt_text in mgt_text_list:
+            if len(mgt_text[i].split()) <= 1 or len(mgt_text[i].split()) >= 150:
+                flag = 0
+                break
+        if flag:
+            res.append([q[i], a_human[i], mgt_text_list[0][i], mgt_text_list[1][i],
+                       mgt_text_list[2][i], mgt_text_list[3][i], mgt_text_list[4][i], mgt_text_list[5][i]])
 
     data_new = {
         'train': {
@@ -172,18 +195,16 @@ def load_NarrativeQA(detectLLM):
             data_partition = 'train'
         else:
             data_partition = 'test'
-        data_new[data_partition]['text'].append(
-            process_spaces(res[index_list[i]][1]))
-        data_new[data_partition]['label'].append(0)
-        data_new[data_partition]['text'].append(
-            process_spaces(res[index_list[i]][2]))
-        data_new[data_partition]['label'].append(1)
+        for j in range(1, 8):
+            data_new[data_partition]['text'].append(
+                process_spaces(res[index_list[i]][j]))
+            data_new[data_partition]['label'].append(j-1)
     return data_new
 
 
-def load(name, **kwargs):
+def load(name, cache_dir, **kwargs):
     if name in DATASETS:
         load_fn = globals()[f'load_{name}']
-        return load_fn(**kwargs)
+        return load_fn(cache_dir=cache_dir, **kwargs)
     else:
         raise ValueError(f'Unknown dataset {name}')

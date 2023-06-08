@@ -164,10 +164,16 @@ cython_debug/
 *.pkl
 *.ipynb
 *.txt
+
 # *.csv
-adversarial_attack.py
+NarrativeQA_chatgpt.csv
+*LLMs.csv
+adv_attack.py
 run.py
+benchmark_*.py
+ablation*
 
 # folders
 logs/
 figs/
+draw_utils/

@@ -1,9 +1,10 @@
 import transformers
 import re
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 from sklearn.linear_model import LogisticRegression
 import time
 from functools import wraps
+import random
 
 
 def timeit(func):
@@ -20,6 +21,28 @@ def timeit(func):
 
 # define regex to match all <extra_id_*> tokens, where * is an integer
 pattern = re.compile(r"<extra_id_\d+>")
+
+
+def select_train_data(data, select_num=-1):
+    new_train = {
+        'text': [],
+        'label': [],
+    }
+    total_num = len(data['train']['text'])
+    index_list = list(range(total_num))
+    random.seed(0)
+    random.shuffle(index_list)
+    if select_num == -1:
+        return data
+    else:
+        for i in range(select_num):
+            text = data['train']['text'][index_list[i]]
+            label = data['train']['label'][index_list[i]]
+            new_train['text'].append(text)
+            new_train['label'].append(label)
+        data['train'] = new_train
+
+    return data
 
 
 def filter_test_data(data, max_length=25):
@@ -58,11 +81,20 @@ def load_base_model(base_model, DEVICE):
 
 
 def cal_metrics(label, pred_label, pred_posteriors):
-    acc = accuracy_score(label, pred_label)
-    precision = precision_score(label, pred_label)
-    recall = recall_score(label, pred_label)
-    f1 = f1_score(label, pred_label)
-    auc = roc_auc_score(label, pred_posteriors)
+    if len(set(label)) < 3:
+        acc = accuracy_score(label, pred_label)
+        precision = precision_score(label, pred_label)
+        recall = recall_score(label, pred_label)
+        f1 = f1_score(label, pred_label)
+        auc = roc_auc_score(label, pred_posteriors)
+    else:
+        acc = accuracy_score(label, pred_label)
+        precision = precision_score(label, pred_label, average='weighted')
+        recall = recall_score(label, pred_label, average='weighted')
+        f1 = f1_score(label, pred_label, average='weighted')
+        auc = -1.0
+        conf_m = confusion_matrix(label, pred_label)
+        print(conf_m)
     return acc, precision, recall, f1, auc
 
 

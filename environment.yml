@@ -299,6 +299,7 @@ dependencies:
     - click==8.0.4
     - cloudpickle==2.2.1
     - conllu==4.5.2
+    - data==0.4
     - datasets==2.4.0
     - deprecated==1.2.13
     - dill==0.3.5.1
@@ -307,6 +308,7 @@ dependencies:
     - flair==0.11.3
     - fst-pso==1.8.1
     - ftfy==6.1.1
+    - funcsigs==1.0.2
     - future==0.18.3
     - fuzzytm==2.0.5
     - gdown==4.4.0
@@ -318,6 +320,7 @@ dependencies:
     - konoha==4.6.5
     - langdetect==1.0.9
     - language-tool-python==2.7.1
+    - latex==0.7.0
     - lemminflect==0.2.3
     - lru-dict==1.1.8
     - lxml==4.9.2
@@ -339,13 +342,16 @@ dependencies:
     - pyfume==0.2.25
     - segtok==1.5.11
     - sentencepiece==0.1.95
+    - shutilwhich==1.1.0
     - simpful==2.10.0
     - smart-open==6.3.0
     - soupsieve==2.4
     - sqlitedict==2.1.0
     - tabulate==0.9.0
+    - tempdir==0.7.1
     - terminaltables==3.1.10
     - textattack==0.3.8
     - wikipedia-api==0.5.8
     - word2number==1.1
     - wrapt==1.15.0
+prefix: /home/allen/anaconda3/envs/MGTBench
