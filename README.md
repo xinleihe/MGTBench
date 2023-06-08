@@ -7,17 +7,17 @@ It is still under continuous development and we will include more detection meth
 ## Supported Methods
 Currently, we support the following methods (continuous updating):
 - Metric-based methods:
-    - Log-Likelihood [Ref](https://arxiv.org/abs/1908.09203);
-    - Rank [Ref](https://arxiv.org/abs/1906.04043);
-    - Log-Rank [Ref](https://arxiv.org/abs/2301.11305);
-    - Entropy [Ref](https://arxiv.org/abs/1906.04043);
-    - GLTR Test 2 Features (Rank Counting) [Ref](https://arxiv.org/abs/1906.04043);
-    - DetectGPT [Ref](https://arxiv.org/abs/2301.11305);
+    - Log-Likelihood [[Ref]](https://arxiv.org/abs/1908.09203);
+    - Rank [[Ref]](https://arxiv.org/abs/1906.04043);
+    - Log-Rank [[Ref]](https://arxiv.org/abs/2301.11305);
+    - Entropy [[Ref]](https://arxiv.org/abs/1906.04043);
+    - GLTR Test 2 Features (Rank Counting) [[Ref]](https://arxiv.org/abs/1906.04043);
+    - DetectGPT [[Ref]](https://arxiv.org/abs/2301.11305);
 - Model-based methods:
-    - OpenAI Detector [Ref](https://arxiv.org/abs/1908.09203);
-    - ChatGPT Detector [Ref](https://arxiv.org/abs/2301.07597);
-    - GPTZero [Ref](https://gptzero.me/);
-    - LM Detector [Ref](https://arxiv.org/abs/1911.00650);
+    - OpenAI Detector [[Ref]](https://arxiv.org/abs/1908.09203);
+    - ChatGPT Detector [[Ref]](https://arxiv.org/abs/2301.07597);
+    - GPTZero [[Ref]](https://gptzero.me/);
+    - LM Detector [[Ref]](https://arxiv.org/abs/1911.00650);
 
 ## Supported Datasets
 - TruthfulQA;
