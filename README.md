@@ -23,7 +23,8 @@ Currently, we support the following methods (continuous updating):
 - TruthfulQA;
 - SQuAD1;
 - NarrativeQA; 
-For datasets, you can download them from [Google Drive](https://drive.google.com/drive/folders/1p4iBeM4r-sUKe8TnS4DcYlxvQagcmola?usp=sharing).)
+
+For datasets, you can download them from [Google Drive](https://drive.google.com/drive/folders/1p4iBeM4r-sUKe8TnS4DcYlxvQagcmola?usp=sharing).
 
 ## Installation
 ```
