@@ -3,17 +3,17 @@ import datetime
 import os
 import json
 import dataset_loader
-from methods.utils import load_base_model
+from methods.utils import load_base_model, load_base_model_and_tokenizer, filter_test_data
 from methods.supervised import run_supervised_experiment
-from methods.utils import load_base_model_and_tokenizer
 from methods.detectgpt import run_detectgpt_experiments
 from methods.gptzero import run_gptzero_experiment
 from methods.metric_based import get_ll, get_rank, get_entropy, get_rank_GLTR, run_threshold_experiment, run_GLTR_experiment
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default="SQuAD1")
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--dataset', type=str, default="TruthfulQA")
+    parser.add_argument('--detectLLM', type=str, default="ChatGPT")
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--base_model_name', type=str, default="gpt2-medium")
     parser.add_argument('--mask_filling_model_name',
                         type=str, default="t5-large")
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     START_TIME = datetime.datetime.now().strftime('%H-%M-%S-%f')
 
     print(f'Loading dataset {args.dataset}...')
-    data = dataset_loader.load(args.dataset, args.cache_dir)
+    data = dataset_loader.load(args.dataset, detectLLM=args.detectLLM)
     # data = filter_test_data(data, max_length=25)
 
     base_model_name = args.base_model_name.replace('/', '_')
@@ -78,13 +78,11 @@ if __name__ == '__main__':
         args.base_model_name, cache_dir)
     load_base_model(base_model, DEVICE)
 
-    # write the data to a json file in the save folder
-    with open(os.path.join(SAVE_PATH, "raw_data.json"), "w") as f:
-        print(
-            f"Writing raw data to {os.path.join(SAVE_PATH, 'raw_data.json')}")
-        json.dump(data, f)
-
-    outputs = []
+    # # write the data to a json file in the save folder
+    # with open(os.path.join(SAVE_PATH, "raw_data.json"), "w") as f:
+    #     print(
+    #         f"Writing raw data to {os.path.join(SAVE_PATH, 'raw_data.json')}")
+    #     json.dump(data, f)
 
     def ll_criterion(text): return get_ll(
         text, base_model, base_tokenizer, DEVICE)
@@ -101,6 +99,7 @@ if __name__ == '__main__':
     def GLTR_criterion(text): return get_rank_GLTR(
         text, base_model, base_tokenizer, DEVICE)
 
+    outputs = []
     outputs.append(run_threshold_experiment(data, ll_criterion, "likelihood"))
     outputs.append(run_threshold_experiment(data, rank_criterion, "rank"))
     outputs.append(run_threshold_experiment(
@@ -112,17 +111,30 @@ if __name__ == '__main__':
                    cache_dir=cache_dir, batch_size=batch_size, DEVICE=DEVICE))
     outputs.append(run_supervised_experiment(data, model='Hello-SimpleAI/chatgpt-detector-roberta',
                    cache_dir=cache_dir, batch_size=batch_size, DEVICE=DEVICE, pos_bit=1))
+    outputs.append(run_supervised_experiment(data, model='distilbert-base-uncased',
+                   cache_dir=cache_dir, batch_size=batch_size, DEVICE=DEVICE, pos_bit=1, finetune=True))
 
     # # run GPTZero: pleaze specify your gptzero_key in the args
     # outputs.append(run_gptzero_experiment(data, api_key=args.gptzero_key))
 
-    # run DetectGPT
-    outputs.append(run_detectgpt_experiments(
-        args, data, base_model, base_tokenizer))
+    # # run DetectGPT
+    # outputs.append(run_detectgpt_experiments(
+    #     args, data, base_model, base_tokenizer))
 
-    # save results
-    import pickle as pkl
-    with open(os.path.join(SAVE_PATH, f"benchmark_results.pkl"), "wb") as f:
-        pkl.dump(outputs, f)
+    # # save results
+    # import pickle as pkl
+    # with open(os.path.join(SAVE_PATH, f"benchmark_results.pkl"), "wb") as f:
+    #     pkl.dump(outputs, f)
+
+    with open("logs/performance.csv", "a") as wf:
+        for row in outputs:
+            wf.write(
+                f"{args.dataset},{args.detectLLM},{args.base_model_name},{row['name']},{json.dumps(row['general'])}\n")
 
     print("Finish")
+
+    # with open("logs/performance_le25words.csv", "a") as wf:
+    #     for row in outputs:
+    #         wf.write(f"{args.dataset},{args.detectLLM},{args.base_model_name},{row['name']},{json.dumps(row['general'])}\n")
+
+    # print("Finish")
