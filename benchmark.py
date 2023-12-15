@@ -122,6 +122,9 @@ if __name__ == '__main__':
     with open(os.path.join(SAVE_PATH, f"benchmark_results.pkl"), "wb") as f:
         pkl.dump(outputs, f)
 
+    if not os.path.exists("logs"):
+        os.mkdir("logs")
+
     with open("logs/performance.csv", "a") as wf:
         for row in outputs:
             wf.write(f"{args.dataset},{args.detectLLM},{args.base_model_name},{row['name']},{json.dumps(row['general'])}\n")
