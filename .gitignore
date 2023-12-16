@@ -164,15 +164,18 @@ cython_debug/
 *.pkl
 *.ipynb
 *.txt
+*.bin
 # datasets/*
 
 *.csv
-adv_attack.py
+adv_*.py
 run.py
 benchmark_*.py
+merge_*.py
 ablation*
 
 # folders
 logs/
 figs/
 draw_utils/
+update_results/

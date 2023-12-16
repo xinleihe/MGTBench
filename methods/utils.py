@@ -28,18 +28,12 @@ def select_train_data(data, select_num=-1):
         'text': [],
         'label': [],
     }
-    total_num = len(data['train']['text'])
-    index_list = list(range(total_num))
-    random.seed(0)
-    random.shuffle(index_list)
+
     if select_num == -1:
         return data
     else:
-        for i in range(select_num):
-            text = data['train']['text'][index_list[i]]
-            label = data['train']['label'][index_list[i]]
-            new_train['text'].append(text)
-            new_train['label'].append(label)
+        new_train['text'] = data['train']['text'][:select_num]
+        new_train['label'] = data['train']['label'][:select_num]
         data['train'] = new_train
 
     return data
@@ -53,10 +47,27 @@ def filter_test_data(data, max_length=25):
     for i in range(len(data['test']['text'])):
         text = data['test']['text'][i]
         label = data['test']['label'][i]
-        if len(text.split()) <= 25:
+        if len(text.split()) <= max_length:
             new_test['text'].append(text)
             new_test['label'].append(label)
     data['test'] = new_test
+    return data
+
+
+def cut_length(text, max_length=-1):
+    if max_length == -1:
+        return text
+    else:
+        text = text.split()[:max_length]
+        text = " ".join(text)
+        return text
+
+
+def sample_dataset(data, num_train, num_test):
+    data["train"]["text"] = data["train"]["text"][:num_train]
+    data["train"]["label"] = data["train"]["label"][:num_train]
+    data["test"]["text"] = data["test"]["text"][:num_test]
+    data["test"]["label"] = data["test"]["label"][:num_test]
     return data
 
 
@@ -116,4 +127,4 @@ def get_clf_results(x_train, y_train, x_test, y_test):
         y_test, y_test_pred, y_test_pred_prob)
     test_res = acc_test, precision_test, recall_test, f1_test, auc_test
 
-    return train_res, test_res
+    return clf, train_res, test_res
