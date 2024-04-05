@@ -2,10 +2,11 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import time
-from methods.utils import timeit, get_clf_results
-from methods.IntrinsicDim import PHD
+from ..utils import timeit, get_clf_results
+from .IntrinsicDim import PHD
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+from .auto import MetricBasedDetector
 # # Under development
 # def get_phd(text, base_model, base_tokenizer, DEVICE):
 #     # default setting
@@ -29,6 +30,25 @@ from tqdm import tqdm
 #     print(time.time() - t1, "Seconds")
 #     return res
 
+class LLDetector(MetricBasedDetector):
+    def __init__(self,  **kargs) -> None:
+        super().__init__(**kargs)
+
+
+    def detect(self, text, **kargs):
+        result = []
+        for batch in DataLoader(text):
+            with torch.no_grad():
+                tokenized = self.tokenizer(
+                    batch,
+                    max_length=1024,
+                    return_tensors="pt"
+                ).to(self.model.device)
+                labels = tokenized.input_ids
+                result.append( -self.model(**tokenized, labels=labels).loss.item())
+        return result
+        
+        
 
 def get_ll(text, base_model, base_tokenizer, DEVICE):
     with torch.no_grad():
@@ -214,7 +234,7 @@ def run_threshold_experiment_multiple_test_length(
     torch.manual_seed(0)
     np.random.seed(0)
     res = {}
-    from methods.utils import cut_length, cal_metrics
+    from mgtbench.utils import cut_length, cal_metrics
     for length in lengths:
         test_text = data['test']['text']
         test_label = data['test']['label']
@@ -303,7 +323,7 @@ def run_GLTR_experiment_multiple_test_length(
     np.random.seed(0)
 
     res = {}
-    from methods.utils import cut_length, cal_metrics
+    from mgtbench.utils import cut_length, cal_metrics
     for length in lengths:
         test_text = data['test']['text']
         test_label = data['test']['label']

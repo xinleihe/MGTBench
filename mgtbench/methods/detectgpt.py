@@ -6,8 +6,8 @@ import torch.nn.functional as F
 import random
 import time
 from tqdm import tqdm
-from methods.metric_based import get_lls, get_ll, get_ranks, get_rank
-from methods.utils import get_clf_results
+from .metric_based import get_lls, get_ll, get_ranks, get_rank
+from ..utils import get_clf_results
 
 # define regex to match all <extra_id_*> tokens, where * is an integer
 pattern = re.compile(r"<extra_id_\d+>")
@@ -586,7 +586,7 @@ def run_classification_experiment_multi_text_length(
     y_test_pred = clf.predict(x_test)
     y_test_pred_prob = clf.predict_proba(x_test)
     y_test_pred_prob = [_[1] for _ in y_test_pred_prob]
-    from methods.utils import cut_length, cal_metrics
+    from mgtbench.utils import cut_length, cal_metrics
     acc_test, precision_test, recall_test, f1_test, auc_test = cal_metrics(
         y_test, y_test_pred, y_test_pred_prob)
     test_res = acc_test, precision_test, recall_test, f1_test, auc_test
@@ -636,7 +636,7 @@ def run_perturbation_experiments_multi_test_length(
     t1 = time.time()
 
     import copy
-    from methods.utils import cut_length
+    from mgtbench.utils import cut_length
 
     res = {}
 

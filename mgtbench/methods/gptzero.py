@@ -1,7 +1,7 @@
 import os
 import requests
 from tqdm import tqdm
-from methods.utils import timeit, cal_metrics
+from ..utils import timeit, cal_metrics
 
 # from https://github.com/Haste171/gptzero
 

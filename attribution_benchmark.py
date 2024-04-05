@@ -2,12 +2,12 @@ import argparse
 import datetime
 import os
 import json
-import dataset_loader_attribution
-from methods.utils import load_base_model, load_base_model_and_tokenizer, filter_test_data
-from methods.supervised import run_supervised_experiment
-from methods.detectgpt import run_perturbation_experiments
-from methods.gptzero import run_gptzero_experiment
-from methods.metric_based import get_ll, get_rank, get_entropy, get_rank_GLTR, run_threshold_experiment, run_GLTR_experiment
+from mgtbench import dataloader_attribution as dataset_loader_attribution
+from mgtbench.utils import load_base_model, load_base_model_and_tokenizer, filter_test_data
+from mgtbench.methods import run_supervised_experiment
+from mgtbench.methods import run_perturbation_experiments
+from mgtbench.methods import run_gptzero_experiment
+from mgtbench.methods import get_ll, get_rank, get_entropy, get_rank_GLTR, run_threshold_experiment, run_GLTR_experiment
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

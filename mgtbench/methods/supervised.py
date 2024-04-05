@@ -2,7 +2,7 @@ import numpy as np
 import transformers
 import torch
 from tqdm import tqdm
-from methods.utils import timeit, cal_metrics
+from ..utils import timeit, cal_metrics
 from torch.utils.data import DataLoader
 from transformers import AdamW
 
@@ -161,7 +161,7 @@ def run_supervised_experiment_multi_test_length(
             tokenizer.save_pretrained(save_path)
 
     res = {}
-    from methods.utils import cut_length, cal_metrics
+    from mgtbench.utils import cut_length, cal_metrics
     for length in lengths:
         test_text = data['test']['text']
         test_text = [cut_length(_, length) for _ in test_text]
