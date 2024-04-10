@@ -31,8 +31,8 @@ from ..auto import MetricBasedDetector
 #     return res
 
 class LLDetector(MetricBasedDetector):
-    def __init__(self,  **kargs) -> None:
-        super().__init__(**kargs)
+    def __init__(self, name, **kargs) -> None:
+        super().__init__(name,**kargs)
 
 
     def detect(self, text, **kargs):
@@ -48,25 +48,7 @@ class LLDetector(MetricBasedDetector):
                 result.append( -self.model(**tokenized, labels=labels).loss.item())
         return result
         
-        
-
-def get_ll(text, base_model, base_tokenizer, DEVICE):
-    with torch.no_grad():
-        tokenized = base_tokenizer(
-            text,
-            padding=True,
-            truncation=True,
-            max_length=1024,
-            return_tensors="pt").to(DEVICE)
-        labels = tokenized.input_ids
-        return -base_model(**tokenized, labels=labels).loss.item()
-        # https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py#L1317
-
-
-def get_lls(texts, base_model, base_tokenizer, DEVICE):
-    return [get_ll(_, base_model, base_tokenizer, DEVICE) for _ in texts]
-
-
+ 
 class RankDetector(MetricBasedDetector):
     def __init__(self,  **kargs) -> None:
         super().__init__(**kargs)
@@ -100,7 +82,25 @@ class RankDetector(MetricBasedDetector):
             if log:
                 ranks = torch.log(ranks)
             result.append(ranks.float().mean().item())
-        return result
+        return result       
+
+def get_ll(text, base_model, base_tokenizer, DEVICE):
+    with torch.no_grad():
+        tokenized = base_tokenizer(
+            text,
+            padding=True,
+            truncation=True,
+            max_length=1024,
+            return_tensors="pt").to(DEVICE)
+        labels = tokenized.input_ids
+        return -base_model(**tokenized, labels=labels).loss.item()
+        # https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py#L1317
+
+
+def get_lls(texts, base_model, base_tokenizer, DEVICE):
+    return [get_ll(_, base_model, base_tokenizer, DEVICE) for _ in texts]
+
+
 
 # get the average rank of each observed token sorted by model likelihood
 def get_rank(text, base_model, base_tokenizer, DEVICE, log=False):

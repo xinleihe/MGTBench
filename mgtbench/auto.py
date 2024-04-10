@@ -9,7 +9,7 @@ DETECTOR_MAPPING = {
 }
 
 EXPERIMENT_MAPPING = {
-    'threshold' : 'mgtbench.experiment.'
+    'threshold' : 'mgtbench.experiment.ThresholdExperiment'
 }
 
 class AutoDetector:
@@ -32,7 +32,7 @@ class AutoExperiment:
     _experiment_mapping = EXPERIMENT_MAPPING
 
     @classmethod
-    def from_experiment_name(cls, experiment_name, *args, **kargs):
+    def from_experiment_name(cls, experiment_name, detector, *args, **kargs):
         if experiment_name not in cls._experiment_mapping:
             raise ValueError(f"Unrecognized metric name: {experiment_name}")
         experiment_class_path = cls._experiment_mapping[experiment_name]
@@ -40,7 +40,7 @@ class AutoExperiment:
         # Dynamically import the module and retrieve the class
         experiment_module = __import__(module_name, fromlist=[class_name])
         experiment_class = getattr(experiment_module, class_name)
-        return experiment_class(*args, **kargs)
+        return experiment_class(detector, *args, **kargs)
 
 
 class BaseDetector(ABC):
@@ -53,8 +53,8 @@ class BaseDetector(ABC):
 
 
 class MetricBasedDetector(BaseDetector):
-    def __init__(self,  **kargs) -> None:
-        super().__init__(kargs['name'])
+    def __init__(self, name, **kargs) -> None:
+        super().__init__(name)
         model_name_or_path = kargs.get('model_name_or_path', None)
         if not model_name_or_path:
             raise ValueError('You should pass the model_name_or_path, but',model_name_or_path, 'is given')
@@ -63,19 +63,13 @@ class MetricBasedDetector(BaseDetector):
 
 
 class ModelBasedDetector(BaseDetector):
-    def __init__(self,**kargs) -> None:
-        super().__init__(kargs['name'])
+    def __init__(self,name,**kargs) -> None:
+        super().__init__(name)
 
 
 class BaseExperiment(ABC):
     def __init__(self, **kargs) -> None:
-        data = kargs.get('data', None)
-        if not data:
-            raise ValueError('You should pass data to an experiment')
-        self.train_text = data['train']['text']
-        self.train_label = data['train']['label']
-        self.test_text = data['test']['text']
-        self.test_label = data['test']['label']
+        self.loaded = False
             
     def cal_metrics(self, label, pred_label, pred_posteriors):
         if len(set(label)) < 3:
@@ -98,7 +92,15 @@ class BaseExperiment(ABC):
     def predict(self):
         raise NotImplementedError('Invalid Experiment, implement predict first.')
 
+    def load_data(self, data):
+        self.train_text = data['train']['text']
+        self.train_label = data['train']['label']
+        self.test_text = data['test']['text']
+        self.test_label = data['test']['label']
+
     def launch(self):
+        if not self.loaded:
+            raise RuntimeError('You should load the data first, call load_data.')
         predict_list = self.predict()
         final_output = []
         for detector_predict in predict_list:

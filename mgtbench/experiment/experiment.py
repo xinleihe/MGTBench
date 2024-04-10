@@ -7,13 +7,13 @@ from sklearn.linear_model import LogisticRegression
 class ThresholdExperiment(BaseExperiment):
     _ALLOWED_detector = ['ll', ]
 
-    def __init__(self, **kargs) -> None:
-        super().__init__(**kargs)
-        self.detector:List[BaseDetector] = kargs.get('detector', None)
+    def __init__(self, detector, **kargs) -> None:
+        super().__init__()
+        self.detector = [detector] if isinstance(detector, BaseDetector) else detector
         if not self.detector:
             raise ValueError('You should pass a list of detector to an experiment')
         
-    def predict(self)->List[Dict[str]]:
+    def predict(self):
         predict_list = []
         for detector in self.detector:
             if detector not in self._ALLOWED_detector:
