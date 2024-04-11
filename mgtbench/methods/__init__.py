@@ -4,4 +4,4 @@ from .detectgpt import run_perturbation_experiments
 from .supervised import run_supervised_experiment
 
 
-from .metric_based import LLDetector, RankDetector
+from .metric_based import LLDetector, RankDetector, RankGLTRDetector, EntropyDetector
