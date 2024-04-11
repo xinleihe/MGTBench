@@ -55,22 +55,6 @@ class BaseDetector(ABC):
         raise NotImplementedError('Invalid detector, implement detect first.')
 
 
-class MetricBasedDetector(BaseDetector):
-    def __init__(self, name, **kargs) -> None:
-        super().__init__(name)
-        model_name_or_path = kargs.get('model_name_or_path', None)
-        model_and_tokenizer = kargs.get('model_and_tokenizer', None)
-        if model_name_or_path and model_and_tokenizer:
-            warnings.warn('You should only pass the path or a model instance, both are detected use model instance')
-            self.model, self.tokenizer = model_and_tokenizer
-        elif not model_name_or_path and not model_and_tokenizer:
-            raise ValueError('You should pass the model_name_or_path or a model instance, but none is given')
-        elif model_name_or_path:
-            quantitize_bit = kargs.get('load_in_k_bit', None)
-            self.model, self.tokenizer = load_pretrained(model_name_or_path, quantitize_bit)
-        else:
-            self.model, self.tokenizer = model_and_tokenizer
-
 
 class ModelBasedDetector(BaseDetector):
     def __init__(self,name,**kargs) -> None:
