@@ -3,6 +3,7 @@ from .loading import load_pretrained
 from dataclasses import dataclass
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 import warnings
+import numpy as np
 DETECTOR_MAPPING = {
     'gptzero' : 'mgtbench.methods.GPTZeroAPI',
     'll' : 'mgtbench.methods.LLDetector',
@@ -65,6 +66,16 @@ class BaseExperiment(ABC):
     def __init__(self, **kargs) -> None:
         self.loaded = False
             
+
+    def data_prepare(self, x, y):
+        x, y = np.array(x), np.array(y)
+        select_index = ~np.isnan(x)
+        x = x[select_index]
+        y = y[select_index]
+        x_train = np.expand_dims(x, axis=-1)
+        return x_train, y
+
+
     def cal_metrics(self, label, pred_label, pred_posteriors):
         if len(set(label)) < 3:
             acc = accuracy_score(label, pred_label)
