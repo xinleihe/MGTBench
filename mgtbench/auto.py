@@ -65,7 +65,10 @@ class ModelBasedDetector(BaseDetector):
 class BaseExperiment(ABC):
     def __init__(self, **kargs) -> None:
         self.loaded = False
-            
+
+    @abstractmethod 
+    def predict(self):
+        raise NotImplementedError('Invalid Experiment, implement predict first.')
 
     def data_prepare(self, x, y):
         x, y = np.array(x), np.array(y)
@@ -74,7 +77,12 @@ class BaseExperiment(ABC):
         y = y[select_index]
         x_train = np.expand_dims(x, axis=-1)
         return x_train, y
-
+    
+    def run_clf(self, clf, x, y):
+        y_train_pred = clf.predict(x)
+        y_train_pred_prob = clf.predict_proba(x)
+        y_train_pred_prob = [_[1] for _ in y_train_pred_prob]
+        return (y, y_train_pred, y_train_pred_prob)
 
     def cal_metrics(self, label, pred_label, pred_posteriors):
         if len(set(label)) < 3:
@@ -93,9 +101,6 @@ class BaseExperiment(ABC):
             print(conf_m)
         return Metric(acc, precision, recall, f1, auc)
     
-    @abstractmethod 
-    def predict(self):
-        raise NotImplementedError('Invalid Experiment, implement predict first.')
 
     def load_data(self, data):
         self.loaded = True

@@ -24,15 +24,10 @@ class ThresholdExperiment(BaseExperiment):
             
             clf = LogisticRegression(random_state=0).fit(x_train, y_train)
 
-            y_train_pred = clf.predict(x_train)
-            y_train_pred_prob = clf.predict_proba(x_train)
-            y_train_pred_prob = [_[1] for _ in y_train_pred_prob]
-
-            y_test_pred = clf.predict(x_test)
-            y_test_pred_prob = clf.predict_proba(x_test)
-            y_test_pred_prob = [_[1] for _ in y_test_pred_prob]
-            predict_list.append({'train_pred':(y_train, y_train_pred, y_train_pred_prob),
-                                 'test_pred':(y_test, y_test_pred, y_test_pred_prob)})
+            train_result = self.run_clf(clf, x_train, y_train)
+            test_result = self.run_clf(clf, x_test, y_test)
+            predict_list.append({'train_pred':train_result,
+                                 'test_pred':test_result})
         return predict_list
 
 
@@ -59,13 +54,8 @@ class PerturbExperiment(BaseExperiment):
             x_train, y_train = self.data_prepare(detector.detect(self.train_text, self.train_label, **detect_config),self.train_label)
             x_test, y_test   = self.data_prepare(detector.detect(self.test_text, self.test_label, **detect_config), self.test_label)
             clf = LogisticRegression(random_state=0).fit(x_train, y_train)
-            y_train_pred = clf.predict(x_train)
-            y_train_pred_prob = clf.predict_proba(x_train)
-            y_train_pred_prob = [_[1] for _ in y_train_pred_prob]
-
-            y_test_pred = clf.predict(x_test)
-            y_test_pred_prob = clf.predict_proba(x_test)
-            y_test_pred_prob = [_[1] for _ in y_test_pred_prob]
-            predict_list.append({'train_pred':(y_train, y_train_pred, y_train_pred_prob),
-                                 'test_pred':(y_test, y_test_pred, y_test_pred_prob)})
+            train_result = self.run_clf(clf, x_train, y_train)
+            test_result = self.run_clf(clf, x_test, y_test)
+            predict_list.append({'train_pred':train_result,
+                                 'test_pred':test_result})
         return predict_list
