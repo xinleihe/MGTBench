@@ -8,8 +8,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from ..auto import BaseDetector
 from ..loading import load_pretrained
-from transformers import PreTrainedModel, PreTrainedTokenizer
+from transformers import PreTrainedModel, PreTrainedTokenizerBase
 import warnings
+from tqdm import tqdm
 # # Under development
 # def get_phd(text, base_model, base_tokenizer, DEVICE):
 #     # default setting
@@ -38,13 +39,13 @@ class MetricBasedDetector(BaseDetector):
         super().__init__(name)
         self.model = kargs.get('model', None)
         self.tokenizer = kargs.get('tokenizer', None)
-        if not self.model or not not self.tokenizer:
+        if not self.model or not  self.tokenizer:
             model_name_or_path = kargs.get('model_name_or_path', None)
             if not model_name_or_path :
                 raise ValueError('You should pass the model_name_or_path or a model instance, but none is given')
             quantitize_bit = kargs.get('load_in_k_bit', None)
             self.model, self.tokenizer = load_pretrained(model_name_or_path, quantitize_bit)
-        if not isinstance(self.model, PreTrainedModel) or not isinstance(self.tokenizer, PreTrainedTokenizer):
+        if not isinstance(self.model, PreTrainedModel) or not isinstance(self.tokenizer, PreTrainedTokenizerBase):
             raise ValueError('Expect PreTrainedModel, PreTrainedTokenizer, got', type(self.model), type(self.tokenizer))
         
 
@@ -58,12 +59,13 @@ class LLDetector(MetricBasedDetector):
         result = []
         if not isinstance(text, list):
             text = [text]
-        for batch in DataLoader(text):
+        for batch in tqdm(DataLoader(text)):
             with torch.no_grad():
                 tokenized = self.tokenizer(
                     batch,
                     max_length=1024,
-                    return_tensors="pt"
+                    return_tensors="pt",
+                    truncation = True
                 ).to(self.model.device)
                 labels = tokenized.input_ids
                 result.append( -self.model(**tokenized, labels=labels).loss.item())
@@ -71,19 +73,20 @@ class LLDetector(MetricBasedDetector):
         
  
 class RankDetector(MetricBasedDetector):
-    def __init__(self,  **kargs) -> None:
-        super().__init__(**kargs)
+    def __init__(self,name, **kargs) -> None:
+        super().__init__(name,**kargs)
 
     def detect(self, text, **kargs):
         result = []
         if not isinstance(text, list):
             text = [text]
-        for batch in DataLoader(text):
+        for batch in tqdm(DataLoader(text)):
             with torch.no_grad():
                 tokenized = self.tokenizer(
                     batch,
                     max_length=1024,
-                    return_tensors="pt"
+                    return_tensors="pt",
+                    truncation = True
                 ).to(self.model.device)
                 logits = self.model(**tokenized).logits[:, :-1]
                 labels = tokenized.input_ids[:, 1:]
@@ -109,19 +112,20 @@ class RankDetector(MetricBasedDetector):
 
 
 class RankGLTRDetector(MetricBasedDetector):
-    def __init__(self,  **kargs) -> None:
-        super().__init__(**kargs)
+    def __init__(self,name, **kargs) -> None:
+        super().__init__(name,**kargs)
 
     def detect(self, text, **kargs):
         result = []
         if not isinstance(text, list):
             text = [text]
-        for batch in DataLoader(text):
+        for batch in tqdm(DataLoader(text)):
             with torch.no_grad():
                 tokenized = self.tokenizer(
                     batch,
                     max_length=1024,
-                    return_tensors="pt"
+                    return_tensors="pt",
+                    truncation = True
                 ).to(self.model.device)
                 logits = self.model(**tokenized).logits[:, :-1]
                 labels = tokenized.input_ids[:, 1:]
@@ -156,14 +160,14 @@ class RankGLTRDetector(MetricBasedDetector):
 
 
 class EntropyDetector(MetricBasedDetector):
-    def __init__(self,  **kargs) -> None:
-        super().__init__(**kargs)
+    def __init__(self,name, **kargs) -> None:
+        super().__init__(name,**kargs)
 
     def detect(self, text, **kargs):
         result = []
         if not isinstance(text, list):
             text = [text]
-        for batch in DataLoader(text):
+        for batch in tqdm(DataLoader(text)):
             with torch.no_grad():
                 tokenized = self.tokenizer(
                     batch,
