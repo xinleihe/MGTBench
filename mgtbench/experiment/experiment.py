@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 
 class ThresholdExperiment(BaseExperiment):
-    _ALLOWED_detector = ['ll', 'rank', 'rankGLTR', 'entropy']
+    _ALLOWED_detector = ['ll', 'rank', 'rankGLTR', 'entropy', 'GPTZero']
 
     def __init__(self, detector, **kargs) -> None:
         super().__init__()

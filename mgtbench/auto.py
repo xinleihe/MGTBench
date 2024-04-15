@@ -12,7 +12,8 @@ DETECTOR_MAPPING = {
     'entropy' : 'mgtbench.methods.EntropyDetector',
     'detectGPT' : 'mgtbench.methods.DetectGPTDetector',
     'NPR' : 'mgtbench.methods.NPRDetector',
-    'LRR' : 'mgtbench.methods.LRRDetector'
+    'LRR' : 'mgtbench.methods.LRRDetector',
+    'GPTZero': 'mgtbench.methods.GPTZeroDetector'
 }
 
 EXPERIMENT_MAPPING = {
@@ -26,7 +27,7 @@ class AutoDetector:
     @classmethod
     def from_detector_name(cls, name, *args, **kargs):
         if name not in cls._detector_mapping:
-            raise ValueError(f"Unrecognized metric name: {name}")
+            raise ValueError(f"Unrecognized detector name: {name}, name should be one of", cls._detector_mapping.keys())
         metric_class_path = cls._detector_mapping[name]
         module_name, class_name = metric_class_path.rsplit('.', 1)
         

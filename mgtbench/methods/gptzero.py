@@ -2,7 +2,7 @@ import os
 import requests
 from tqdm import tqdm
 from ..utils import timeit, cal_metrics
-
+from ..auto import BaseDetector
 # from https://github.com/Haste171/gptzero
 
 
@@ -35,6 +35,20 @@ class GPTZeroAPI:
         }
         response = requests.post(url, headers=headers, files=files)
         return response.json()
+
+class GPTZeroDetector(BaseDetector):
+    def __init__(self, name, **kargs) -> None:
+        super().__init__(name)
+        self.api_key = kargs.get('api_key', None)
+        if not self.api_key:
+            raise ValueError('You should pass an api_key before using the GPTZero Detector')
+        self.api = GPTZeroAPI(self.api_key)
+
+    def detect(self, text, **kargs):
+        pred_prob = [gptzero_api.text_predict(x)['documents'][0]["completely_generated_prob"] for x in tqdm(text)]
+        return [round(_) for _ in pred_prob]
+
+
 
 
 def run_gptzero_experiment(data, api_key):
