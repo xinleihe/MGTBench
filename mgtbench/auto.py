@@ -9,11 +9,15 @@ DETECTOR_MAPPING = {
     'll' : 'mgtbench.methods.LLDetector',
     'rank' : 'mgtbench.methods.RankDetector',
     'rank_GLTR' : 'mgtbench.methods.RankGLTRDetector',
-    'entropy' : 'mgtbench.methods.EntropyDetector'
+    'entropy' : 'mgtbench.methods.EntropyDetector',
+    'detectGPT' : 'mgtbench.methods.DetectGPTDetector',
+    'NPR' : 'mgtbench.methods.NPRDetector',
+    'LRR' : 'mgtbench.methods.LRRDetector'
 }
 
 EXPERIMENT_MAPPING = {
-    'threshold' : 'mgtbench.experiment.ThresholdExperiment'
+    'threshold' : 'mgtbench.experiment.ThresholdExperiment',
+    'perturb' : 'mgtbench.experiment.PerturbExperiment'
 }
 
 class AutoDetector:
@@ -109,10 +113,11 @@ class BaseExperiment(ABC):
         self.test_text = data['test']['text']
         self.test_label = data['test']['label']
 
-    def launch(self):
+    def launch(self, **config):
         if not self.loaded:
             raise RuntimeError('You should load the data first, call load_data.')
-        predict_list = self.predict()
+        print('Calculate result for each data point')
+        predict_list = self.predict(**config)
         final_output = []
         for detector_predict in predict_list:
             train_metric = self.cal_metrics(*detector_predict['train_pred'])
