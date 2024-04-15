@@ -11,6 +11,7 @@ import time
 from tqdm import tqdm
 import warnings
 from dataclasses import dataclass
+from torch.utils.data import DataLoader
 # define regex to match all <extra_id_*> tokens, where * is an integer
 pattern = re.compile(r"<extra_id_\d+>")
 
@@ -200,7 +201,7 @@ def perturb_texts_(
 
 class PerturbBasedDetector(BaseDetector):
     def __init__(self, name, **kargs) -> None:
-        super().__init__(name, **kargs)
+        self.name = name
         model_name_or_path = kargs.get('model_name_or_path', None)
         mask_model_name_or_path = kargs.get('mask_model_name_or_path', None)
         if not model_name_or_path or not mask_model_name_or_path :
@@ -209,99 +210,103 @@ class PerturbBasedDetector(BaseDetector):
         self.mask_model, self.mask_tokenizer = load_pretrained_mask(mask_model_name_or_path)
         self.ceil_pct = kargs.get('ceil_pct', False)
 
-    def perturb_once(self, texts, perturb_config, chunk_size):
+    def perturb_once(self, texts, perturb_config, chunk_size=20):
         outputs = []
         for i in tqdm(range(0,len(texts),chunk_size)):
             outputs.extend(perturb_texts_(perturb_config,
                                         texts[i:i + chunk_size],
-                                        self.self.mask_model,
-                                        self.self.mask_tokenizer,
+                                        self.mask_model,
+                                        self.mask_tokenizer,
                                         self.tokenizer,
                                         ceil_pct=self.ceil_pct))
         return outputs
 
     def perturb(self, text, label,  n_perturbations, perturb_config):
-        p_text = self.perturb_once(perturb_config, [x for x in text for _ in range(
-            n_perturbations)], self.mask_model, self.mask_tokenizer, self.tokenizer, ceil_pct=False)
+        p_text = self.perturb_once([x for x in text for _ in range(n_perturbations)], perturb_config)
         
         for _ in range(perturb_config.n_perturbation_rounds - 1):
             try:
-                ptext = self.perturb_once(
-                    perturb_config, p_text, self.mask_model, self.mask_tokenizer, self.tokenizer, ceil_pct=False)
+                p_text = self.perturb_once(p_text, perturb_config)
             except AssertionError:
                 break
 
-        assert len(ptext) == len(text) * \
-            n_perturbations, f"Expected {len(text) * n_perturbations} perturbed samples, got {len(ptext)}"
-        text_list = []
+        assert len(p_text) == len(text) * \
+            n_perturbations, f"Expected {len(text) * n_perturbations} perturbed samples, got {len(p_text)}"
+        data = {'text':[],
+                'label':[],
+                'perturbed_text':[]}
+
         for idx in range(len(text)):
-            text_list.append({
-                "text": text[idx],
-                "label": label[idx],
-                "perturbed_text": ptext[idx * n_perturbations: (idx + 1) * n_perturbations],
-            })
-        return text_list
+                data["text"].append(text[idx])
+                data["label"].append( label[idx])
+                data["perturbed_text"].extend(p_text[idx * n_perturbations: (idx + 1) * n_perturbations])
+        data['len'] =  len(text)
+        return data
 
 
 class DetectGPTDetector(PerturbBasedDetector, LLDetector):
     def __init__(self, name, **kargs) -> None:
-        PerturbBasedDetector.__init__(name, **kargs)
-        LLDetector.__init__(name,model=self.model, tokenizer = self.tokenizer)
+        PerturbBasedDetector.__init__(self, name, **kargs)
+        LLDetector.__init__(self,name,model=self.model, tokenizer = self.tokenizer)
 
-    def detect(self, text, label, **kargs):
-        n_perturbations = kargs.get('n_perturbations', 1)
+    def detect(self, text, label, kargs):
+        n_perturbations = kargs.get('n_perturbations', 10)
         perturb_config = kargs.get('perturb_config', None)
         if not perturb_config:
-            raise ValueError('You should pass a perturb_config for perturbing the data')
+            raise ValueError('You should pass a perturb_config for perturbing the data, you should not deirectly call this method')
         criterion = kargs.get('criterion', 'd')
-        p_text = self.perturb(text, label,n_perturbations,perturb_config)
-        predictions = []
-        for res in tqdm(p_text):
-            # note that perturbed text is not a single text
-            p_ll_origin = super(LLDetector, self).detect(res["text"])
-            p_ll = super(LLDetector, self).detect(res["perturbed_text"])
-            perturbed_ll_mean = np.mean(p_ll)
-            perturbed_ll_std = np.std(p_ll) if len(p_ll) > 1 else 1
-            if criterion == 'd':
-                predictions.append((p_ll_origin - perturbed_ll_mean))
-            elif criterion == 'z':
-                if perturbed_ll_std == 0:
-                    perturbed_ll_std = 1
-                    warnings.warn('WARNING: std of perturbed original is 0, setting to 1')
-                predictions.append((p_ll_origin - perturbed_ll_mean)/perturbed_ll_std)
+        print('Running perturb on the given texts')
+        data = self.perturb(text, label,n_perturbations,perturb_config)
+        print('Perturb finished.')
+        p_ll_origin = LLDetector.detect(self, data["text"])
+        p_ll_origin = np.array(p_ll_origin)
+        p_ll = LLDetector.detect(self,data["perturbed_text"])
+        perturbed_ll_mean = []
+        perturbed_ll_std = []
+        for batch in DataLoader(p_ll, batch_size=n_perturbations):
+            batch = batch.numpy()
+            perturbed_ll_mean.append(np.mean(batch))
+            perturbed_ll_std.append(np.std(batch) if len(batch)>1 else 1)
+        assert len(p_ll_origin) == len(perturbed_ll_mean)
+        if criterion == 'd':
+            predictions = p_ll_origin - perturbed_ll_mean
+        elif criterion == 'z':
+            predictions = (p_ll_origin - perturbed_ll_mean)/perturbed_ll_std
         return predictions
         
 
 class NPRDetector(PerturbBasedDetector, RankDetector):
     def __init__(self, name, **kargs) -> None:
-        PerturbBasedDetector.__init__(name, **kargs)
-        RankDetector.__init__(name,model=self.model, tokenizer = self.tokenizer)
+        PerturbBasedDetector.__init__(self,name, **kargs)
+        RankDetector.__init__(self,name,model=self.model, tokenizer = self.tokenizer)
 
-    def detect(self, text, label, **kargs):
+    def detect(self, text, label, kargs):
         n_perturbations = kargs.get('n_perturbations', 1)
         perturb_config = kargs.get('perturb_config', None)
         if not perturb_config:
-            raise ValueError('You should pass a perturb_config for perturbing the data')
-        p_text = self.perturb(text, label, n_perturbations,perturb_config)
-        predictions = []
-        for res in tqdm(p_text):
-            # note that perturbed text is not a single text
-            p_rank_origin = super(RankDetector, self).detect(res["text"], log=True)
-            p_rank = super(RankDetector, self).detect(res["perturbed_text"], log=True)
-            perturbed_ll_mean = np.mean(p_rank)
-            predictions.append(perturbed_ll_mean/p_rank_origin)
+            raise ValueError('You should pass a perturb_config for perturbing the data, you should not deirectly call this method')
+        data = self.perturb(text, label, n_perturbations,perturb_config)
+        p_rank_origin = RankDetector.detect(self, data["text"], log=True)
+        p_rank_origin = np.array(p_rank_origin)
+
+        p_rank = RankDetector.detect(self,data["perturbed_text"], log=True)
+        perturbed_rank_mean = []
+        for batch in DataLoader(p_rank, batch_size=n_perturbations):
+            batch = batch.numpy()
+            perturbed_rank_mean.append(np.mean(batch))
+        assert len(p_rank_origin) == len(perturbed_rank_mean)
+        predictions = perturbed_rank_mean/p_rank_origin
+
         return predictions
 
 class LRRDetector(PerturbBasedDetector, LLDetector, RankDetector):
     def __init__(self, name, **kargs) -> None:
-        PerturbBasedDetector.__init__(name, **kargs)
-        RankDetector.__init__(name,model=self.model, tokenizer = self.tokenizer)
-        LLDetector.__init__(name,model=self.model, tokenizer = self.tokenizer)
+        PerturbBasedDetector.__init__(self,name, **kargs)
+        RankDetector.__init__(self,name,model=self.model, tokenizer = self.tokenizer)
+        LLDetector.__init__(self,name,model=self.model, tokenizer = self.tokenizer)
 
-    def detect(self, text, label, **kargs):
-        predictions = []
-        for t in tqdm(text):
-            rank= super(RankDetector, self).detect(t, log=True)
-            ll = super(LLDetector, self).detect(text)
-            predictions.append(ll/rank)
-        return predictions
+    def detect(self, text, label, kargs):
+        p_rank_origin = np.array(RankDetector.detect(self, text, log=True))
+        p_ll_origin = np.array(LLDetector.detect(self, text))
+        return p_ll_origin/p_rank_origin
+        
