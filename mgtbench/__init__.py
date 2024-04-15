@@ -6,4 +6,4 @@ from .methods import (
     detectgpt,gptzero,IntrinsicDim,metric_based,supervised
     )
 
-from .auto import AutoDetector, MetricBasedDetector, ModelBasedDetector, AutoExperiment
+from .auto import AutoDetector, ModelBasedDetector, AutoExperiment
