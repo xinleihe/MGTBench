@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-from sklearn.metrics import accuracy_score, recall_score
+from captum.attr import IntegratedGradients
+from sklearn.metrics import accuracy_score, recall_score,f1_score
 from scipy.special import jn_zeros
-
+from copy import deepcopy
 def compute_zeros(d, c_n):
     m = d
     n = c_n
@@ -31,6 +31,48 @@ def enery(emb, y):
     return E_f
 
 
+class Toymodel(nn.Module):
+    def __init__(self, in_dim):
+        super(Toymodel, self).__init__()
+        self.lin1 = nn.Linear(in_dim, 256)
+        self.relu1 = nn.ReLU()
+        self.lin2 = nn.Linear(256, 64)
+        self.relu2 = nn.ReLU()
+        self.lin3 = nn.Linear(64, 2)
+
+    def forward(self, x):
+        return self.lin3(self.relu2(self.lin2(self.relu1(self.lin1(x)))))
+ 
+
+class IG_block:
+    def __init__(self):
+        super(IG_block, self).__init__()
+        self.model = Toymodel(768).cuda()
+        self.IG = IntegratedGradients(self.model)
+
+    def train(self):
+        self.model.train()
+    
+    def eval(self):
+        self.model.eval()
+
+    def inverse(self, embeds, tar, max_features=20):
+        baseline = torch.zeros_like(embeds)
+        ig_attrs, _ = self.IG.attribute(inputs=embeds, baselines=baseline, target=tar, n_steps=200,
+                                        return_convergence_delta=True)
+        max_ids = torch.argsort(torch.abs(ig_attrs), dim=1)[:, -max_features:].detach().cpu().numpy().tolist()
+        B_size = embeds.shape[0]
+        H_size = embeds.shape[1]
+        embeds = embeds.expand(20, B_size, H_size)
+        embeds = embeds.permute(1, 0, 2)
+        #print(B_size)
+        for i in range(B_size):
+            for j in range(max_features):
+                idx = max_ids[i][j]
+                indices = (torch.LongTensor([i]), torch.LongTensor([j]), torch.LongTensor([idx]))
+                embeds = deepcopy(embeds.index_put(indices, torch.Tensor([0.0]).cuda()))
+        return embeds
+
 class DEMASQ(nn.Module):
     def __init__(self):
         super(DEMASQ, self).__init__()
@@ -40,6 +82,7 @@ class DEMASQ(nn.Module):
         self.fc4 = nn.Linear(64, 32)
         self.fc5 = nn.Linear(32, 1)
         self.relu = nn.ReLU()
+        self.IG = IG_block()
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
@@ -52,7 +95,7 @@ class DEMASQ(nn.Module):
 
 from mgtbench.loading.dataloader import load
 from  sentence_transformers import SentenceTransformer
-data = load('Essay', 'ChatGLM')
+data = load('Essay', 'Claude')
 model = SentenceTransformer('sentence-transformers/msmarco-distilbert-base-tas-b')
 train_embs = model.encode(data['train']['text'], convert_to_tensor=True)
 test_embs = model.encode(data['test']['text'], convert_to_tensor=True)
@@ -64,30 +107,32 @@ from torch.utils.data import DataLoader
 # Instantiate the model
 demasq = DEMASQ()
 demasq.cuda()
-optimizer = optim.Adam(demasq.parameters(), lr=0.0001)
+optimizer = optim.Adam(list(demasq.parameters())+list(demasq.IG.model.parameters()), lr=0.0001)
 criterion = nn.BCELoss()
 m = nn.Sigmoid()
 
 from tqdm import tqdm
 for epoch in range(num_epochs):
     running_loss = 0.0
-    model.train()
+    demasq.train()
+    demasq.IG.train()
     for inputs, targets in tqdm(DataLoader(train)):  # Loop over your data
         optimizer.zero_grad()  # Zero the gradients
-        e = enery(inputs,targets) - min(enery(inputs, 1), enery(inputs, 0))
         inputs = inputs.cuda()
+        inputs_perm = demasq.IG.inverse(inputs, targets)
+        e = enery(inputs_perm,targets) - min(enery(inputs_perm, 1), enery(inputs_perm, 0))
         e = e.cuda()
         targets = torch.Tensor([[1-targets]]).cuda()
-        
         outputs = demasq(inputs)  # Forward pass
-        loss = criterion(m(outputs), targets) 
+        loss = criterion(m(outputs), targets) + e
         loss.backward()  # Backward pass
         optimizer.step()  # Update weights
 
         running_loss += loss.item()
     epoch_loss = running_loss / len(train)
     print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss}")
-    model.eval()
+    demasq.eval()
+    demasq.IG.eval()
     preds = []
     labels = []
     for inputs, targets in tqdm(DataLoader(test)):  # Loop over your data
@@ -96,6 +141,6 @@ for epoch in range(num_epochs):
         targets = torch.Tensor([[1-targets]]).cuda()
         pred = m(demasq(inputs))
         preds.append(1 if pred>0.5 else 0)
-    print(accuracy_score(labels,preds), recall_score(labels,preds))
+    print(accuracy_score(labels,preds), recall_score(labels,preds), f1_score(labels, preds))
     
         
