@@ -249,28 +249,24 @@ class DetectGPTDetector(PerturbBasedDetector, LLDetector):
         PerturbBasedDetector.__init__(self, name, **kargs)
         LLDetector.__init__(self,name,model=self.model, tokenizer = self.tokenizer)
 
-    def detect(self, text, label, kargs):
-        n_perturbations = kargs.get('n_perturbations', 10)
-        perturb_config = kargs.get('perturb_config', None)
-        if not perturb_config:
-            raise ValueError('You should pass a perturb_config for perturbing the data, you should not deirectly call this method')
-        criterion = kargs.get('criterion', 'd')
+    def detect(self, text, label, config):
+        perturb_config = config
         print('Running perturb on the given texts')
-        data = self.perturb(text, label,n_perturbations,perturb_config)
+        data = self.perturb(text, label,perturb_config.n_perturbations,perturb_config)
         print('Perturb finished.')
         p_ll_origin = LLDetector.detect(self, data["text"])
         p_ll_origin = np.array(p_ll_origin)
         p_ll = LLDetector.detect(self,data["perturbed_text"])
         perturbed_ll_mean = []
         perturbed_ll_std = []
-        for batch in DataLoader(p_ll, batch_size=n_perturbations):
+        for batch in DataLoader(p_ll, batch_size=perturb_config.n_perturbations):
             batch = batch.numpy()
             perturbed_ll_mean.append(np.mean(batch))
             perturbed_ll_std.append(np.std(batch) if len(batch)>1 else 1)
         assert len(p_ll_origin) == len(perturbed_ll_mean)
-        if criterion == 'd':
+        if perturb_config.criterion == 'd':
             predictions = p_ll_origin - perturbed_ll_mean
-        elif criterion == 'z':
+        elif perturb_config.criterion == 'z':
             predictions = (p_ll_origin - perturbed_ll_mean)/perturbed_ll_std
         return predictions
         
@@ -280,20 +276,21 @@ class NPRDetector(PerturbBasedDetector, RankDetector):
         PerturbBasedDetector.__init__(self,name, **kargs)
         RankDetector.__init__(self,name,model=self.model, tokenizer = self.tokenizer)
 
-    def detect(self, text, label, kargs):
-        n_perturbations = kargs.get('n_perturbations', 1)
-        perturb_config = kargs.get('perturb_config', None)
-        if not perturb_config:
-            raise ValueError('You should pass a perturb_config for perturbing the data, you should not deirectly call this method')
-        data = self.perturb(text, label, n_perturbations,perturb_config)
+    def detect(self, text, label, config):
+        perturb_config = config
+        print('Running perturb on the given texts')
+        data = self.perturb(text, label, perturb_config.n_perturbations,perturb_config)
+        print('Perturb finished.')
+
         p_rank_origin = RankDetector.detect(self, data["text"], log=True)
         p_rank_origin = np.array(p_rank_origin)
 
         p_rank = RankDetector.detect(self,data["perturbed_text"], log=True)
         perturbed_rank_mean = []
-        for batch in DataLoader(p_rank, batch_size=n_perturbations):
+        for batch in DataLoader(p_rank, batch_size=perturb_config.n_perturbations):
             batch = batch.numpy()
             perturbed_rank_mean.append(np.mean(batch))
+        print(len(p_rank_origin), len(perturbed_rank_mean))
         assert len(p_rank_origin) == len(perturbed_rank_mean)
         predictions = perturbed_rank_mean/p_rank_origin
 
