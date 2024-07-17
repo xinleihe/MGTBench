@@ -5,8 +5,9 @@ from tqdm import tqdm
 from ..utils import timeit, cal_metrics
 from torch.utils.data import DataLoader
 from transformers import AdamW
-
-
+from ..auto import BaseDetector
+from ..loading import load_pretrained_supervise
+from transformers import PreTrainedModel, PreTrainedTokenizerBase
 class CustomDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
         self.encodings = encodings
@@ -21,6 +22,39 @@ class CustomDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.labels)
 
+class SupervisedDetector(BaseDetector):
+    def __init__(self, name, **kargs) -> None:
+        super().__init__(name)
+        self.model = kargs.get('model', None)
+        self.tokenizer = kargs.get('tokenizer', None)
+        if not self.model or not  self.tokenizer:
+            model_name_or_path = kargs.get('model_name_or_path', None)
+            if not model_name_or_path :
+                raise ValueError('You should pass the model_name_or_path or a model instance, but none is given')
+            quantitize_bit = kargs.get('load_in_k_bit', None)
+            self.model, self.tokenizer = load_pretrained_supervise(model_name_or_path, quantitize_bit)
+        if not isinstance(self.model, PreTrainedModel) or not isinstance(self.tokenizer, PreTrainedTokenizerBase):
+            raise ValueError('Expect PreTrainedModel, PreTrainedTokenizer, got', type(self.model), type(self.tokenizer))
+        if ("state_dict_path" in kargs) and ("state_dict_key" in kargs):
+            self.model.load_state_dict(
+                torch.load(kargs["state_dict_path"],map_location='cpu')[kargs["state_dict_key"]])
+        
+    def detect(self, text, **kargs):
+        result = []
+        pos_bit=0
+        if not isinstance(text, list):
+            text = [text]
+        for batch in tqdm(DataLoader(text)):
+            with torch.no_grad():
+                tokenized = self.tokenizer(
+                    batch,
+                    max_length=512,
+                    return_tensors="pt",
+                    truncation = True
+                ).to(self.model.device)
+                result.append(self.model(**tokenized).logits.softmax(-1)[:, pos_bit].item())
+        # print(result)
+        return result if isinstance(text, list) else result[0]
 
 @timeit
 def run_supervised_experiment(

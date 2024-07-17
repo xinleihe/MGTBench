@@ -1,1 +1,1 @@
-from .experiment import ThresholdExperiment, PerturbExperiment
+from .experiment import ThresholdExperiment, PerturbExperiment, SupervisedExperiment

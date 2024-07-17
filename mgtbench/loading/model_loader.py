@@ -11,7 +11,8 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
-    AutoModelForSeq2SeqLM
+    AutoModelForSeq2SeqLM,
+    AutoModelForSequenceClassification
 )
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
@@ -118,13 +119,48 @@ def load_pretrained_mask(model_name_or_path, quantization_bit=None) -> Tuple[Pre
         logger.info("Quantizing model to {} bit.".format(quantization_bit))
 
     config_kwargs["device_map"] = "auto"
-
-
     # Load and prepare pretrained models (without valuehead).
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_name_or_path,
         config=config,
         torch_dtype= torch.float16,
+        **config_kwargs
+    )
+    try:
+        n_positions = model.config.n_positions
+    except AttributeError:
+        n_positions = 512
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name_or_path,
+        use_fast=True,
+        model_max_length=n_positions,
+        trust_remote_code=True
+    )
+    if tokenizer.pad_token_id is None or tokenizer.pad_token_id == 64000: # 64000 for baichuan model (older version)
+        tokenizer.pad_token_id = 0 # set as the <unk> token
+
+    return model, tokenizer
+
+def load_pretrained_supervise(model_name_or_path, quantization_bit=None) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
+    r"""
+    Loads pretrained model and tokenizer.
+
+    Support both training and inference.
+    """
+    config_kwargs = {
+        "trust_remote_code": True,
+    } 
+    config = AutoConfig.from_pretrained(model_name_or_path, **config_kwargs)
+    config_kwargs["device_map"] = "cuda"
+
+
+    # Load and prepare pretrained models (without valuehead).
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_name_or_path,
+        config=config,
+        torch_dtype= torch.float16,
+        ignore_mismatched_sizes=True,
         **config_kwargs
     )
     try:

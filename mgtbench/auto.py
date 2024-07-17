@@ -13,12 +13,17 @@ DETECTOR_MAPPING = {
     'detectGPT' : 'mgtbench.methods.DetectGPTDetector',
     'NPR' : 'mgtbench.methods.NPRDetector',
     'LRR' : 'mgtbench.methods.LRRDetector',
-    'GPTZero': 'mgtbench.methods.GPTZeroDetector'
+    'GPTZero': 'mgtbench.methods.GPTZeroDetector',
+    'OpenAI-D':'mgtbench.methods.SupervisedDetector',
+    'ConDA':'mgtbench.methods.SupervisedDetector',
+    'ChatGPT-D':'mgtbench.methods.SupervisedDetector',
+    'LM-D':'mgtbench.methods.SupervisedDetector',
 }
 
 EXPERIMENT_MAPPING = {
     'threshold' : 'mgtbench.experiment.ThresholdExperiment',
-    'perturb' : 'mgtbench.experiment.PerturbExperiment'
+    'perturb' : 'mgtbench.experiment.PerturbExperiment',
+    'supervised' : 'mgtbench.experiment.SupervisedExperiment'
 }
 
 class AutoDetector:
