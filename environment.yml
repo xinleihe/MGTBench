@@ -1,3 +1,5 @@
+# @deprecation, 
+#TODO:need a small dependenct
 name: MGTBench
 channels:
   - pytorch

@@ -1,3 +1,5 @@
+# @deprecation
+
 import argparse
 import datetime
 import os
