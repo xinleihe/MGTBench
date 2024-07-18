@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from transformers import AdamW
 from ..auto import BaseDetector
 from ..loading import load_pretrained_supervise
+from sklearn.model_selection import train_test_split
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 class CustomDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
@@ -55,6 +56,49 @@ class SupervisedDetector(BaseDetector):
                 result.append(self.model(**tokenized).logits.softmax(-1)[:, pos_bit].item())
         # print(result)
         return result if isinstance(text, list) else result[0]
+    
+    def finetune(self, data, config):
+        batch_size = config.batch_size
+        num_epochs = config.epoch
+        save_path = config.save_path
+        if config.pos_bit == 0:
+            train_label = [1 if _ == 0 else 0 for _ in train_label]
+            test_label = [1 if _ == 0 else 0 for _ in test_label]
+
+        train_encodings = self.tokenizer(data['text'], truncation=True, padding=True)
+        train_dataset = CustomDataset(train_encodings, train_label)
+
+        self.model.train()
+        train_loader = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True)
+        no_decay = ['bias', 'LayerNorm.weight']
+        optimizer_grouped_parameters = [
+            {'params': [p for n, p in self.model.named_parameters() if not any(
+                nd in n for nd in no_decay)], 'weight_decay': 0.01},
+            {'params': [p for n, p in self.model.named_parameters() if any(
+                nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        ]
+        optimizer = AdamW(optimizer_grouped_parameters, lr=1e-5)
+
+        for epoch in range(num_epochs):
+            running_loss = 0.0
+            for batch in tqdm(train_loader, desc=f"Fine-tuning: {epoch} epoch"):
+                optimizer.zero_grad()
+                input_ids = batch['input_ids'].to(self.model.device)
+                attention_mask = batch['attention_mask'].to(self.model.device)
+                labels = batch['labels'].to(self.model.device)
+                outputs = self.model(
+                    input_ids, attention_mask=attention_mask, labels=labels)
+                loss = outputs[0]
+                loss.backward()
+                running_loss += loss.item()
+                optimizer.step()
+            epoch_loss = running_loss / len(train_dataset)
+            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss}")
+        self.model.eval()
+        if config.need_save:
+            self.model.save_pretrained(f'finetuned/{self.name}')
+
 
 @timeit
 def run_supervised_experiment(

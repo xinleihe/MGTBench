@@ -55,6 +55,19 @@ class PerturbConfig:
 
 
 class PerturbExperiment(BaseExperiment):
+    '''
+    class PerturbConfig:
+        span_length:int = 2
+        buffer_size:int = 1
+        mask_top_p:float = 1 
+        pct_words_masked:float = 0.3
+        DEVICE:int = 0
+        random_fills:bool = False
+        random_fills_tokens:bool = False
+        n_perturbation_rounds:int = 1
+        n_perturbations:int = 10
+        criterion:str = 'd'
+    '''
     _ALLOWED_detector = ['detectGPT', 'NPR', 'LRR' ]
     def __init__(self, detector, **kargs) -> None:
         super().__init__()
@@ -102,6 +115,16 @@ class SupervisedConfig:
                 setattr(self, field.name, kargs[field.name])
 
 class SupervisedExperiment(BaseExperiment):
+    '''
+    class SupervisedConfig:
+        need_finetune:bool=False
+        need_save:bool=True
+        batch_size:int=16
+        pos_bit:int=1
+        num_labels:int=2
+        epochs:int=3
+        save_path:str='finetuned/'
+    '''
     _ALLOWED_detector = ['OpenAI-D', 'ConDA', 'ChatGPT-D', "LM-D" ]
     def __init__(self, detector, **kargs) -> None:
         super().__init__()
@@ -118,6 +141,10 @@ class SupervisedExperiment(BaseExperiment):
                 print(detector.name, 'is not for', self.__name__)
                 continue
             self.supervise_config.update(kargs)
+            if self.supervise_config.need_finetune:
+                data_train = {'text':self.train_text, 'label':self.train_label}
+                detector.finetune(data_train, self.supervise_config)
+                print('Fine-tune finished')
             print('Predict training data')
             x_train, y_train = self.data_prepare(detector.detect(self.train_text),self.train_label)
             print('Predict testing data')
@@ -169,10 +196,9 @@ class DemasqExperiment(BaseExperiment):
                 print(detector.name, 'is not for', self.__name__)
                 continue
             self.config.update(kargs)
-            data_train = {'text':self.train_text, 'label':self.train_label}
             if self.config.need_finetune:
+                data_train = {'text':self.train_text, 'label':self.train_label}
                 detector.finetune(data_train, self.config)
-                print('Fine-tune finished')
             
             logits = detector.detect(self.train_text)
             preds = [1 if logit>0.5 else 0 for logit in logits]
