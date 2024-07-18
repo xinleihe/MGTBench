@@ -18,12 +18,14 @@ DETECTOR_MAPPING = {
     'ConDA':'mgtbench.methods.SupervisedDetector',
     'ChatGPT-D':'mgtbench.methods.SupervisedDetector',
     'LM-D':'mgtbench.methods.SupervisedDetector',
+    'demasq' : 'mgtbench.methods.DemasqDetector',
 }
 
 EXPERIMENT_MAPPING = {
     'threshold' : 'mgtbench.experiment.ThresholdExperiment',
     'perturb' : 'mgtbench.experiment.PerturbExperiment',
-    'supervised' : 'mgtbench.experiment.SupervisedExperiment'
+    'supervised' : 'mgtbench.experiment.SupervisedExperiment',
+    'demasq' : 'mgtbench.experiment.DemasqExperiment'
 }
 
 class AutoDetector:
