@@ -21,7 +21,7 @@ class ThresholdExperiment(BaseExperiment):
         for detector in self.detector:
             print(f'Running prediction of detector {detector.name}')
             if detector.name not in self._ALLOWED_detector:
-                print(detector.name, 'is not for', self.__name__)
+                print(detector.name, 'is not for this experiment')
                 continue
             print('Predict training data')
             x_train, y_train = self.data_prepare(detector.detect(self.train_text), self.train_label)
@@ -81,7 +81,7 @@ class PerturbExperiment(BaseExperiment):
         for detector in self.detector:
             print(f'Running prediction of detector {detector.name}')
             if detector.name not in self._ALLOWED_detector:
-                print(detector.name, 'is not for', self.__name__)
+                print(detector.name, 'is not for it')
                 continue
             # print(kargs)
 
@@ -138,7 +138,7 @@ class SupervisedExperiment(BaseExperiment):
         for detector in self.detector:
             print(f'Running prediction of detector {detector.name}')
             if detector.name not in self._ALLOWED_detector:
-                print(detector.name, 'is not for', self.__name__)
+                print(detector.name, 'is not for it')
                 continue
             self.supervise_config.update(kargs)
             if self.supervise_config.need_finetune:
@@ -193,7 +193,7 @@ class DemasqExperiment(BaseExperiment):
         for detector in self.detector:
             print(f'Running prediction of detector {detector.name}')
             if detector.name not in self._ALLOWED_detector:
-                print(detector.name, 'is not for', self.__name__)
+                print(detector.name, 'is not for it')
                 continue
             self.config.update(kargs)
             if self.config.need_finetune:
@@ -221,7 +221,7 @@ class GPTZeroExperiment(BaseExperiment):
         for detector in self.detector:
             print(f'Running prediction of detector {detector.name}')
             if detector.name not in self._ALLOWED_detector:
-                print(detector.name, 'is not for', self.__name__)
+                print(detector.name, 'is not for _ALLOWED_detector')
                 continue
             
             logits = detector.detect(self.train_text)

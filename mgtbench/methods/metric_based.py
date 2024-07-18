@@ -39,6 +39,7 @@ class MetricBasedDetector(BaseDetector):
         super().__init__(name)
         self.model = kargs.get('model', None)
         self.tokenizer = kargs.get('tokenizer', None)
+        self.device = kargs.get('device', None)
         if not self.model or not  self.tokenizer:
             model_name_or_path = kargs.get('model_name_or_path', None)
             if not model_name_or_path :

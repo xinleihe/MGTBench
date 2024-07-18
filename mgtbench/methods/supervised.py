@@ -59,14 +59,13 @@ class SupervisedDetector(BaseDetector):
     
     def finetune(self, data, config):
         batch_size = config.batch_size
-        num_epochs = config.epoch
+        num_epochs = config.epochs
         save_path = config.save_path
         if config.pos_bit == 0:
-            train_label = [1 if _ == 0 else 0 for _ in train_label]
-            test_label = [1 if _ == 0 else 0 for _ in test_label]
+            train_label = [1 if _ == 0 else 0 for _ in data['label']]
 
         train_encodings = self.tokenizer(data['text'], truncation=True, padding=True)
-        train_dataset = CustomDataset(train_encodings, train_label)
+        train_dataset = CustomDataset(train_encodings, data['label'])
 
         self.model.train()
         train_loader = DataLoader(
@@ -97,5 +96,5 @@ class SupervisedDetector(BaseDetector):
             print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss}")
         self.model.eval()
         if config.need_save:
-            self.model.save_pretrained(f'finetuned/{self.name}')
+            self.model.save_pretrained(f'{save_path}/{self.name}')
 

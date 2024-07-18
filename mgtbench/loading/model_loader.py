@@ -29,7 +29,7 @@ def load_pretrained(model_name_or_path, quantization_bit=None) -> Tuple[PreTrain
     """
     config_kwargs = {
         "trust_remote_code": True,
-        "_attn_implementation": 'flash_attention_2'
+        # "_attn_implementation": 'flash_attention_2'
     }
 
     tokenizer = AutoTokenizer.from_pretrained(
