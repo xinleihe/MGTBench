@@ -173,7 +173,7 @@ run.py
 benchmark_*.py
 merge_*.py
 ablation*
-
+*.pt
 # folders
 logs/
 figs/
