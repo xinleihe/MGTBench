@@ -1,1 +1,1 @@
-from .experiment import ThresholdExperiment, PerturbExperiment, SupervisedExperiment, DemasqExperiment
+from .experiment import ThresholdExperiment, PerturbExperiment, SupervisedExperiment, DemasqExperiment, GPTZeroExperiment

@@ -8,7 +8,7 @@ from dataclasses import dataclass, fields, asdict
 
 
 class ThresholdExperiment(BaseExperiment):
-    _ALLOWED_detector = ['ll', 'rank', 'rankGLTR', 'entropy', 'GPTZero']
+    _ALLOWED_detector = ['ll', 'rank', 'rankGLTR', 'entropy']
 
     def __init__(self, detector, **kargs) -> None:
         super().__init__()
@@ -208,3 +208,26 @@ class DemasqExperiment(BaseExperiment):
                                  'test_pred':(self.test_label, preds_t, logits_t)})
         return predict_list
 
+class GPTZeroExperiment(BaseExperiment):
+    _ALLOWED_detector = ['GPTZero']
+    def __init__(self, detector, **kargs) -> None:
+        super().__init__()
+        self.detector = [detector] if isinstance(detector, DemasqDetector) else detector
+        if not self.detector:
+            raise ValueError('You should pass a list of detector to an experiment')
+
+    def predict(self, **kargs):
+        predict_list = []
+        for detector in self.detector:
+            print(f'Running prediction of detector {detector.name}')
+            if detector.name not in self._ALLOWED_detector:
+                print(detector.name, 'is not for', self.__name__)
+                continue
+            
+            logits = detector.detect(self.train_text)
+            preds = [1 if logit>0.5 else 0 for logit in logits]
+            logits_t = detector.detect(self.test_text)
+            preds_t = [1 if logit>0.5 else 0 for logit in logits_t]
+            predict_list.append({'train_pred':(self.train_label, preds, logits),
+                                 'test_pred':(self.test_label, preds_t, logits_t)})
+        return predict_list

@@ -46,7 +46,7 @@ class GPTZeroDetector(BaseDetector):
 
     def detect(self, text, **kargs):
         pred_prob = [gptzero_api.text_predict(x)['documents'][0]["completely_generated_prob"] for x in tqdm(text)]
-        return [round(_) for _ in pred_prob]
+        return pred_prob
 
 
 
