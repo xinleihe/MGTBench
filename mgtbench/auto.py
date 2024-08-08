@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 import warnings
 import numpy as np
+import math
+
 DETECTOR_MAPPING = {
     'gptzero' : 'mgtbench.methods.GPTZeroAPI',
     'll' : 'mgtbench.methods.LLDetector',
@@ -82,8 +84,14 @@ class BaseExperiment(ABC):
     def predict(self):
         raise NotImplementedError('Invalid Experiment, implement predict first.')
 
-    def data_prepare(self, x, y):
+    def data_prepare(self, x, y, is_train_data=False):
         x, y = np.array(x), np.array(y)
+        if is_train_data:
+            x = reduce_text(x, self.train_text_mapping)
+        else:
+            x = reduce_text(x, self.test_text_mapping)
+
+        x = np.array(x)
         select_index = ~np.isnan(x)
         x = x[select_index]
         y = y[select_index]
@@ -91,8 +99,12 @@ class BaseExperiment(ABC):
         return x_train, y
     
     def run_clf(self, clf, x, y):
+        # print('x: ', x)
+        # print('y: ', y)
         y_train_pred = clf.predict(x)
         y_train_pred_prob = clf.predict_proba(x)
+        # print('y_pred: ', y_train_pred)
+        # print('y_pred_prob: ', y_train_pred_prob)
         y_train_pred_prob = [_[1] for _ in y_train_pred_prob]
         return (y, y_train_pred, y_train_pred_prob)
 
@@ -120,6 +132,10 @@ class BaseExperiment(ABC):
         self.train_label = data['train']['label']
         self.test_text = data['test']['text']
         self.test_label = data['test']['label']
+
+        # process long text
+        self.train_text, self.train_text_mapping = process_long_texts(self.train_text)
+        self.test_text, self.test_text_mapping = process_long_texts(self.test_text)
 
     def launch(self, **config):
         if not self.loaded:
@@ -154,3 +170,41 @@ class DetectOutput:
     train: Metric = None
     test: Metric = None
     clf  = None
+
+
+def process_long_texts(texts):
+    splited_texts = []
+    mapping = []
+    for i in range(len(texts)):
+        splited_one_text = split_text(i, texts[i])
+        mapping.append(len(splited_texts))
+        splited_texts.extend(splited_one_text)
+    mapping.append(len(splited_texts))
+    # print(f'mapping: {mapping}')
+    return splited_texts, mapping
+
+MAX_WORD_NUM = 300
+
+def split_text(i, text):
+    words = text.split()
+    # print(f"index {i}, len(words): {len(words)}")
+    if len(words) > MAX_WORD_NUM:
+        splited_text = []
+        for j in range(math.ceil(len(words)/MAX_WORD_NUM)):
+            # splited_text.append(' '.join(words[j*MAX_WORD_NUM:(j+1)*MAX_WORD_NUM]))
+            splited_text.append(' '.join(words[j*MAX_WORD_NUM:min((j+1)*MAX_WORD_NUM, len(words))]))
+        return splited_text
+    else:
+        return [text]
+
+def split_text_v2(i, text):
+    pass
+
+def reduce_text(text_features, mapping):
+    # print(f'mapping: {mapping}, len(text_features): {len(text_features)}, text_features: {text_features}')
+    reduced_text_features = []
+    for i in range(len(mapping) - 1):
+        reduced_text_feature = np.average(text_features[range(mapping[i], mapping[i + 1])])
+        reduced_text_features.append(reduced_text_feature)
+    # print(f'len(reduced_text_features): {len(reduced_text_features)}, reduced_text_features: {reduced_text_features}')
+    return reduced_text_features

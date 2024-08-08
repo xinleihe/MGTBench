@@ -221,7 +221,7 @@ class PerturbBasedDetector(BaseDetector):
                                         ceil_pct=self.ceil_pct))
         return outputs
 
-    def perturb(self, text, label,  n_perturbations, perturb_config):
+    def perturb(self, text, n_perturbations, perturb_config):
         p_text = self.perturb_once([x for x in text for _ in range(n_perturbations)], perturb_config)
         
         for _ in range(perturb_config.n_perturbation_rounds - 1):
@@ -238,8 +238,9 @@ class PerturbBasedDetector(BaseDetector):
 
         for idx in range(len(text)):
                 data["text"].append(text[idx])
-                data["label"].append( label[idx])
                 data["perturbed_text"].extend(p_text[idx * n_perturbations: (idx + 1) * n_perturbations])
+        # print('text: ', data["text"])
+        # print('perturbed_text: ', data["perturbed_text"])
         data['len'] =  len(text)
         return data
 
@@ -252,7 +253,7 @@ class DetectGPTDetector(PerturbBasedDetector, LLDetector):
     def detect(self, text, label, config):
         perturb_config = config
         print('Running perturb on the given texts')
-        data = self.perturb(text, label,perturb_config.n_perturbations,perturb_config)
+        data = self.perturb(text, perturb_config.n_perturbations,perturb_config)
         print('Perturb finished.')
         p_ll_origin = LLDetector.detect(self, data["text"])
         p_ll_origin = np.array(p_ll_origin)
@@ -279,7 +280,7 @@ class NPRDetector(PerturbBasedDetector, RankDetector):
     def detect(self, text, label, config):
         perturb_config = config
         print('Running perturb on the given texts')
-        data = self.perturb(text, label, perturb_config.n_perturbations,perturb_config)
+        data = self.perturb(text, perturb_config.n_perturbations,perturb_config)
         print('Perturb finished.')
 
         p_rank_origin = RankDetector.detect(self, data["text"], log=True)
