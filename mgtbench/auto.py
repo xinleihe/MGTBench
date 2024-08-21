@@ -28,37 +28,6 @@ EXPERIMENT_MAPPING = {
     'demasq' : 'mgtbench.experiment.DemasqExperiment'
 }
 
-class AutoDetector:
-    _detector_mapping = DETECTOR_MAPPING
-
-    @classmethod
-    def from_detector_name(cls, name, *args, **kargs):
-        if name not in cls._detector_mapping:
-            raise ValueError(f"Unrecognized detector name: {name}, name should be one of", cls._detector_mapping.keys())
-        metric_class_path = cls._detector_mapping[name]
-        module_name, class_name = metric_class_path.rsplit('.', 1)
-        
-        # Dynamically import the module and retrieve the class
-        metric_module = __import__(module_name, fromlist=[class_name])
-        metric_class = getattr(metric_module, class_name)
-        return metric_class(name,*args, **kargs)
-    
-
-class AutoExperiment:
-    _experiment_mapping = EXPERIMENT_MAPPING
-
-    @classmethod
-    def from_experiment_name(cls, experiment_name, detector, *args, **kargs):
-        if experiment_name not in cls._experiment_mapping:
-            raise ValueError(f"Unrecognized metric name: {experiment_name}")
-        experiment_class_path = cls._experiment_mapping[experiment_name]
-        module_name, class_name = experiment_class_path.rsplit('.', 1)
-        # Dynamically import the module and retrieve the class
-        experiment_module = __import__(module_name, fromlist=[class_name])
-        experiment_class = getattr(experiment_module, class_name)
-        return experiment_class(detector, *args, **kargs)
-
-
 class BaseDetector(ABC):
     def __init__(self,name) -> None:
         self.name = name
@@ -154,3 +123,33 @@ class DetectOutput:
     train: Metric = None
     test: Metric = None
     clf  = None
+
+class AutoDetector:
+    _detector_mapping = DETECTOR_MAPPING
+
+    @classmethod
+    def from_detector_name(cls, name, *args, **kargs) -> BaseDetector:
+        if name not in cls._detector_mapping:
+            raise ValueError(f"Unrecognized detector name: {name}, name should be one of", cls._detector_mapping.keys())
+        metric_class_path = cls._detector_mapping[name]
+        module_name, class_name = metric_class_path.rsplit('.', 1)
+        
+        # Dynamically import the module and retrieve the class
+        metric_module = __import__(module_name, fromlist=[class_name])
+        metric_class = getattr(metric_module, class_name)
+        return metric_class(name,*args, **kargs)
+    
+
+class AutoExperiment:
+    _experiment_mapping = EXPERIMENT_MAPPING
+
+    @classmethod
+    def from_experiment_name(cls, experiment_name, detector, *args, **kargs) -> BaseExperiment:
+        if experiment_name not in cls._experiment_mapping:
+            raise ValueError(f"Unrecognized metric name: {experiment_name}")
+        experiment_class_path = cls._experiment_mapping[experiment_name]
+        module_name, class_name = experiment_class_path.rsplit('.', 1)
+        # Dynamically import the module and retrieve the class
+        experiment_module = __import__(module_name, fromlist=[class_name])
+        experiment_class = getattr(experiment_module, class_name)
+        return experiment_class(detector, *args, **kargs)
