@@ -146,13 +146,19 @@ class SupervisedExperiment(BaseExperiment):
                 detector.finetune(data_train, self.supervise_config)
                 print('Fine-tune finished')
             print('Predict training data')
-            x_train, y_train = self.data_prepare(detector.detect(self.train_text),self.train_label)
+            train_preds, train_labels = self.data_prepare(detector.detect(self.train_text),self.train_label)
             print('Predict testing data')
-            x_test, y_test   = self.data_prepare(detector.detect(self.test_text), self.test_label)
+            test_preds, test_labels = self.data_prepare(detector.detect(self.test_text), self.test_label)
             print('Run classification for results')
-            clf = LogisticRegression(random_state=0).fit(x_train, y_train)
-            train_result = self.run_clf(clf, x_train, y_train)
-            test_result = self.run_clf(clf, x_test, y_test)
+            y_train_pred = np.where(train_preds[:, 0] >= 0.5, 0, 1)
+            y_test_pred = np.where(test_preds[:, 0] >= 0.5, 0, 1)
+            train_preds = [1 - x for x in train_preds.flatten().tolist()]
+            test_preds = [1 - x for x in test_preds.flatten().tolist()]
+            train_result = train_labels, y_train_pred, train_preds
+            test_result = test_labels, y_test_pred, test_preds
+            # clf = LogisticRegression(random_state=0).fit(train_preds, train_labels)
+            # train_result = self.run_clf(clf, train_preds, train_labels)
+            # test_result = self.run_clf(clf, test_preds, test_labels)
             predict_list.append({'train_pred':train_result,
                                  'test_pred':test_result})
         return predict_list
