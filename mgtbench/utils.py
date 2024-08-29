@@ -5,6 +5,9 @@ from sklearn.linear_model import LogisticRegression
 import time
 from functools import wraps
 import random
+import numpy as np
+import torch
+import os
 
 
 def timeit(func):
@@ -128,3 +131,12 @@ def get_clf_results(x_train, y_train, x_test, y_test):
     test_res = acc_test, precision_test, recall_test, f1_test, auc_test
 
     return clf, train_res, test_res
+
+def setup_seed(seed):
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
