@@ -3,6 +3,8 @@ import datasets
 import tqdm
 import pandas as pd
 import re
+import os
+import json
 
 # you can add more datasets here and write your own dataset parsing function
 DATASETS = ['TruthfulQA', 'SQuAD1', 'NarrativeQA', "Essay", "Reuters", "WP"]
@@ -198,7 +200,7 @@ def load_NarrativeQA(detectLLM):
     return data_new
 
 
-def load(name, detectLLM):
+def load(name, detectLLM, task='task2', cut_length=3000, disable=False, seed=0):
 
     if name in ['TruthfulQA', 'SQuAD1', 'NarrativeQA']:
         load_fn = globals()[f'load_{name}']
@@ -231,7 +233,7 @@ def load(name, detectLLM):
         random.shuffle(index_list)
 
         total_num = len(res)
-        for i in tqdm.tqdm(range(total_num), desc="parsing data"):
+        for i in tqdm.tqdm(range(total_num), desc="parsing data", disable=disable):
             if i < total_num * 0.8:
                 data_partition = 'train'
             else:
@@ -243,6 +245,77 @@ def load(name, detectLLM):
                 process_spaces(res[index_list[i]][1]))
             data_new[data_partition]['label'].append(1)
 
+        return data_new
+    
+    elif name in ['Physics','Medicine','Biology','Electrical_engineering','Computer_science','Literature','History','Education','Art','Law','Management','Philosophy','Economy','Math','Statistics','Chemistry']:
+        human_data = datasets.load_dataset("/data1/zzy/MGT-human")
+        subject_human_data = human_data[name]
+        if task == 'task1':
+            task_path = '/data1/zzy/AIGen-TASK1'
+        elif task == 'task2':
+            task_path = '/data1/zzy/AIGen-TASK2'
+        elif task == 'task3':
+            task_path = '/data1/zzy/AIGen-TASK3'
+        else:
+            raise ValueError(f'Unknown task {task}')
+
+        # mgt data
+        files = os.listdir(task_path)
+        files = [f for f in files if f.endswith('.json')]
+        files = [f for f in files if (f.split('.')[0].endswith(detectLLM) and f.startswith(name))]
+        mgt_data = None
+        for f in files:
+            with open(f'{task_path}/{f}', 'r') as f:
+                js = json.load(f)
+                if mgt_data is None:
+                    mgt_data = js
+                else:
+                    mgt_data += js
+
+        # data mix up
+        smaller_len = min([len(subject_human_data), len(mgt_data)])
+        subject_human_data = subject_human_data.shuffle(seed)
+        all_data = []
+        for i in range(smaller_len): # 50:50
+            all_data.append({'text': subject_human_data[i]['text'], 'label': 0})
+
+            if task == 'task2':
+                ai_complete = mgt_data[i]['prompt'].splitlines()[-2].strip('\"') + mgt_data[i]['generated_text'] # concat generated text with first half 
+                all_data.append({'text': ai_complete, 'label': 1})
+                # all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
+            elif task == 'task3':
+                all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
+            else:
+                raise ValueError(f'Unknown task {task}')
+
+        # temp: trim text to 
+        for i in range(len(all_data)):
+            all_data[i]['text'] = all_data[i]['text'][:cut_length]
+
+        index_list = list(range(len(all_data)))
+        random.shuffle(index_list)
+
+        data_new = {
+            'train': {
+                'text': [],
+                'label': [],
+            },
+            'test': {
+                'text': [],
+                'label': [],
+            }
+
+        }
+
+        total_num = len(all_data)
+        for i in tqdm.tqdm(range(total_num), desc="parsing data", disable=disable):
+            if i < total_num * 0.8:
+                data_partition = 'train'
+            else:
+                data_partition = 'test'
+            data_new[data_partition]['text'].append(
+                process_spaces(all_data[index_list[i]]['text']))
+            data_new[data_partition]['label'].append(all_data[index_list[i]]['label'])
         return data_new
 
     else:
