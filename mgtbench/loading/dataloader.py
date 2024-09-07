@@ -252,7 +252,7 @@ def load(name, detectLLM, task='task2', cut_length=3000, disable=False, seed=0):
         subject_human_data = human_data[name]
         if task == 'task1':
             task_path = '/data1/zzy/AIGen-TASK1'
-        elif task == 'task2':
+        elif task == 'task2' or task == 'task2_gen':
             task_path = '/data1/zzy/AIGen-TASK2'
         elif task == 'task3':
             task_path = '/data1/zzy/AIGen-TASK3'
@@ -271,7 +271,7 @@ def load(name, detectLLM, task='task2', cut_length=3000, disable=False, seed=0):
                     mgt_data = js
                 else:
                     mgt_data += js
-
+    
         # data mix up
         smaller_len = min([len(subject_human_data), len(mgt_data)])
         subject_human_data = subject_human_data.shuffle(seed)
@@ -282,7 +282,8 @@ def load(name, detectLLM, task='task2', cut_length=3000, disable=False, seed=0):
             if task == 'task2':
                 ai_complete = mgt_data[i]['prompt'].splitlines()[-2].strip('\"') + mgt_data[i]['generated_text'] # concat generated text with first half 
                 all_data.append({'text': ai_complete, 'label': 1})
-                # all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
+            elif task == 'task2_gen':
+                all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
             elif task == 'task3':
                 all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
             else:
