@@ -49,7 +49,7 @@ if __name__ == '__main__':
                         f"--seed {seed} " \
                         f"--task {task} " \
                         f"--folder test " \
-                        f"--eval True"
+                        f"--eval"
                 subprocess.run(command, shell=True)
                 time.sleep(2)
                 torch.cuda.empty_cache()
@@ -67,5 +67,5 @@ if __name__ == '__main__':
                 f"--seed {seed} " \
                 f"--task {task} " \
                 f"--folder test " \
-                f"--eval True"
+                f"--eval"
         subprocess.run(command, shell=True)
