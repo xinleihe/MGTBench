@@ -1,15 +1,9 @@
 import os
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
-
 import json
 import argparse
 import torch
-
-from transformers import AutoModelForSequenceClassification
-from mgtbench import AutoDetector, AutoExperiment
-from mgtbench.loading.dataloader import load
-from mgtbench.utils import setup_seed
+import time
+import subprocess
 
 category = ['Physics', 'Medicine', 'Biology', 'Electrical_engineering', 'Computer_science', 
             'Literature', 'History', 'Education', 'Art', 'Law', 'Management', 'Philosophy', 
@@ -26,6 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, choices=category, default="Art")
     parser.add_argument('--detectLLM', type=str, choices=llms, default="Moonshot")
     parser.add_argument('--task', type=str, choices=['old', 'task2','task2_gen', 'task3'],)
+    parser.add_argument('--gpu', type=int, default=4)
     parser.add_argument('--all', action='store_true')
     args = parser.parse_args()
 
@@ -34,6 +29,8 @@ if __name__ == '__main__':
     task = args.task
     eval_all = args.all
 
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
+
     with open(f'{task}_final/best_hyperparams.json', 'r') as f:
         best_hyperparams = json.load(f)
 
@@ -41,70 +38,34 @@ if __name__ == '__main__':
         for cat in category:
             for llm in llms:
                 best_model = best_hyperparams[cat][llm][0]
+                seed = best_hyperparams[cat][llm][1]
                 best_cut_length = best_hyperparams[cat][llm][2]
 
-                if best_model == 'bert':
-                    model_name = bert
-                elif best_model == 'roberta':
-                    model_name = roberta
-                else:
-                    model_name = distilbert
-                metric = AutoDetector.from_detector_name('LM-D', 
-                                                model_name_or_path=model_name)
-        
-                metric.model = AutoModelForSequenceClassification.from_pretrained(f'/data1/zzy/finetuned/{dataset}_{detectLLM}_{task}_{best_model}').to('cuda')
-                experiment = AutoExperiment.from_experiment_name('supervised',detector=[metric])
-
-                data = load(cat, llm, cut_length=best_cut_length, task=task)
-                experiment.load_data(data)
-                res = experiment.launch(need_finetune=False)
-                print('----------')
-                print('Category:', cat)
-                print('DetectLLM:', llm)
-                print('Task:', task)
-                print('Model:', best_model)
-                print(res[0].train)
-                print(res[0].test)
-                print('----------')
-                del metric
-                del experiment
+                command = f"python run_lm.py " \
+                        f"--dataset {cat} " \
+                        f"--detectLLM {llm} " \
+                        f"--model {best_model} " \
+                        f"--cut_length {best_cut_length} " \
+                        f"--seed {seed} " \
+                        f"--task {task} " \
+                        f"--folder test " \
+                        f"--eval True"
+                subprocess.run(command, shell=True)
+                time.sleep(2)
                 torch.cuda.empty_cache()
 
     else:
         best_model = best_hyperparams[dataset][detectLLM][0]
+        seed = best_hyperparams[dataset][detectLLM][1]
         best_cut_length = best_hyperparams[dataset][detectLLM][2]
 
-        # setup_seed(420)
-        if best_model == 'bert':
-            model_name = bert
-        elif best_model == 'roberta':
-            model_name = roberta
-        else:
-            model_name = distilbert
-        metric = AutoDetector.from_detector_name('LM-D', 
-                                                model_name_or_path=model_name)
-        
-        metric.model = AutoModelForSequenceClassification.from_pretrained(f'/data1/zzy/finetuned/{dataset}_{detectLLM}_{task}_{best_model}').to('cuda')
-        experiment = AutoExperiment.from_experiment_name('supervised',detector=[metric])
-
-        data = load(dataset, detectLLM, cut_length=best_cut_length, task=task)
-        # data['test']['text'] = data['test']['text'][:1000]
-        # data['test']['label'] = data['test']['label'][:1000]
-        experiment.load_data(data)
-        res = experiment.launch(need_finetune=False)
-        print('----------')
-        print('Category:', dataset)
-        print('DetectLLM:', detectLLM)
-        print('Task:', task)
-        print('Model:', best_model)
-        print(res[0].train)
-        print(res[0].test)
-        print('----------')
-
-    
-
-
-                
-
-
-        
+        command = f"python run_lm.py " \
+                f"--dataset {dataset} " \
+                f"--detectLLM {detectLLM} " \
+                f"--model {best_model} " \
+                f"--cut_length {best_cut_length} " \
+                f"--seed {seed} " \
+                f"--task {task} " \
+                f"--folder test " \
+                f"--eval True"
+        subprocess.run(command, shell=True)
