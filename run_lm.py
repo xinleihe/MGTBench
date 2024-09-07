@@ -1,6 +1,7 @@
 import os
 import torch
 import argparse
+import json
 
 from transformers import AutoModelForSequenceClassification
 from mgtbench import AutoDetector, AutoExperiment
@@ -26,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--data_size', type=int, default=1500)
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--save', type=bool, default=False)
+    parser.add_argument('--save', type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument('--best', type=float, help='the current best f1 for the data and detectLLM', default=1)
     parser.add_argument('--folder', type=str, required=True)
     parser.add_argument('--eval', action='store_true')
@@ -69,13 +70,13 @@ if __name__ == '__main__':
         exit()
         
     if not os.path.exists(folder):
-        os.makedirs(folder)
+        raise ValueError(f'{folder} does not exist')
 
     output_path = f'./{folder}/{datatype}_{llmname}.txt' # one file for each subject
 
     print(f"------ Running {datatype} and model {llmname} with seed {seed}, cut_length {cut_length}, data_size {size} ------")
-    with open(output_path, "a") as file:
-        print(f"------ Running {datatype} and model {llmname} with seed {seed}, cut_length {cut_length}, data_size {size} ------", file=file)
+    # with open(output_path, "a") as file:
+    #     print(f"------ Running {datatype} and model {llmname} with seed {seed}, cut_length {cut_length}, data_size {size} ------", file=file)
 
     setup_seed(seed)
 
@@ -94,10 +95,20 @@ if __name__ == '__main__':
     res = experiment.launch(**config)
     print(res[0].train)
     print(res[0].test)
-    with open(output_path, "a") as file:
-        print(res[0].train, file=file)
-        print(res[0].test, file=file)
-        print('\n', file=file)
+    # with open(output_path, "a") as file:
+    #     print(res[0].train, file=file)
+    #     print(res[0].test, file=file)
+    #     print('\n', file=file)
+
+    # serialize the train and test Metric object
+    temp = {'cut_length': cut_length,
+            'data_size': size,
+            'seed': seed,
+            'train': res[0].train.__dict__,
+            'test': res[0].test.__dict__
+            }
+    with open(f'{folder}/experiment.json', 'w') as f:
+        json.dump(temp, f)
 
     cur_f1 = res[0].test.f1
     if save:

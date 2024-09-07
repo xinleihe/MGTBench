@@ -31,15 +31,15 @@ if __name__ == '__main__':
 
     os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
 
-    with open(f'{task}_final/best_hyperparams.json', 'r') as f:
+    with open(f'{task}_best/best_hyperparams.json', 'r') as f:
         best_hyperparams = json.load(f)
 
     if eval_all:
         for cat in category:
             for llm in llms:
-                best_model = best_hyperparams[cat][llm][0]
-                seed = best_hyperparams[cat][llm][1]
-                best_cut_length = best_hyperparams[cat][llm][2]
+                best_model = best_hyperparams[cat][llm]['model']
+                seed = best_hyperparams[cat][llm]['seed']
+                best_cut_length = best_hyperparams[cat][llm]['cut_length']
 
                 command = f"python run_lm.py " \
                         f"--dataset {cat} " \
@@ -55,9 +55,9 @@ if __name__ == '__main__':
                 torch.cuda.empty_cache()
 
     else:
-        best_model = best_hyperparams[dataset][detectLLM][0]
-        seed = best_hyperparams[dataset][detectLLM][1]
-        best_cut_length = best_hyperparams[dataset][detectLLM][2]
+        best_model = best_hyperparams[dataset][detectLLM]['model']
+        seed = best_hyperparams[dataset][detectLLM]['seed']
+        best_cut_length = best_hyperparams[dataset][detectLLM]['cut_length']
 
         command = f"python run_lm.py " \
                 f"--dataset {dataset} " \
