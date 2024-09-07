@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--save', type=bool, default=False)
     parser.add_argument('--best', type=float, help='the current best f1 for the data and detectLLM', default=1)
     parser.add_argument('--folder', type=str, required=True)
-    parser.add_argument('--eval', type=bool, default=False)
+    parser.add_argument('--eval', action='store_true')
     args = parser.parse_args()
 
     datatype = args.dataset
@@ -68,11 +68,10 @@ if __name__ == '__main__':
         print('----------')
         exit()
         
-    
-    # TODO: combine logging files, only use one file for each subject(category)
     if not os.path.exists(folder):
         os.makedirs(folder)
-    output_path = f'./{folder}/{datatype}_{llmname}_{seed}_{cut_length}_{size}.txt'
+
+    output_path = f'./{folder}/{datatype}_{llmname}.txt' # one file for each subject
 
     print(f"------ Running {datatype} and model {llmname} with seed {seed}, cut_length {cut_length}, data_size {size} ------")
     with open(output_path, "a") as file:
@@ -98,6 +97,7 @@ if __name__ == '__main__':
     with open(output_path, "a") as file:
         print(res[0].train, file=file)
         print(res[0].test, file=file)
+        print('\n', file=file)
 
     cur_f1 = res[0].test.f1
     if save:
