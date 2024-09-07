@@ -18,12 +18,12 @@ category = ['Physics', 'Medicine', 'Biology', 'Electrical_engineering', 'Compute
 
 llms = ['Moonshot']
 
-seeds = [420, 3407, 114514]
+seeds = [420, 3407, 114514, 12345]
 # seeds = [2024, 777, 12345]
 
 # for new dataset (task 2 or 3)
-cut_sizes = [500, 700, 1500]
-data_sizes = [500, 800, 2000]
+cut_sizes = [500, 1000, 2000]
+data_sizes = [500, 1500, 2000]
 
 
 if __name__ == '__main__':
@@ -98,26 +98,4 @@ if __name__ == '__main__':
 
                             except Exception as e:
                                 print(e)
-
-
-
-    # with open('task3_candidates.json', 'r') as f:
-    #     candidates = json.load(f)
-
-    # for c in category[1:2]:
-    #     for llm in llms[:]:
-    #         params = candidates[c][llm]
-    #         model = params[0]
-    #         seed = params[1]
-    #         cut_length = params[2]
-    #         data_size = params[3]
-    #         f1 = params[4]
-
-    #         command = f"python run_lm.py --dataset {c} --detectLLM {llm} --model {model} --cut_length {cut_length} --data_size {data_size} \
-    #         --seed {seed} --save True --task task3"
-    #         print(command)
-    #         subprocess.run(command, shell=True)
-    #         print('should be:', f1)
-
-
-        
+                                
