@@ -30,6 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--save', type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument('--best', type=float, help='the current best f1 for the data and detectLLM', default=1)
     parser.add_argument('--folder', type=str, required=True)
+    parser.add_argument('--match_data', type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument('--eval', action='store_true')
     args = parser.parse_args()
 
@@ -42,6 +43,7 @@ if __name__ == '__main__':
     save = args.save
     best = args.best
     folder = args.folder
+    match_data = args.match_data
     eval = args.eval
 
     if args.model == 'bert':
@@ -51,18 +53,20 @@ if __name__ == '__main__':
     else:
         model_name = distilbert
 
+    match_tag = '_match' if match_data else ''
     if eval:
         setup_seed(seed)
         metric1 = AutoDetector.from_detector_name('LM-D', model_name_or_path=model_name)
-        metric1.model = AutoModelForSequenceClassification.from_pretrained(f'/data1/zzy/finetuned/{datatype}_{llmname}_{task}_{args.model}').to('cuda')
+        metric1.model = AutoModelForSequenceClassification.from_pretrained(f'/data1/zzy/finetuned/{datatype}_{llmname}_{task}{match_tag}_{args.model}').to('cuda')
         experiment = AutoExperiment.from_experiment_name('supervised',detector=[metric1])
-        data = load(datatype, llmname, cut_length=cut_length, task=task)
+        data = load(datatype, llmname, cut_length=cut_length, task=task, match=match_data)
         experiment.load_data(data)
         res = experiment.launch(need_finetune=False)
         print('----------')
         print('Category:', datatype)
         print('DetectLLM:', llmname)
         print('Task:', task)
+        print('Match data:', match_data)
         print('Model:', args.model)
         print(res[0].train)
         print(res[0].test)
@@ -85,11 +89,14 @@ if __name__ == '__main__':
     metric1 = AutoDetector.from_detector_name('LM-D', model_name_or_path=model_name)
     experiment = AutoExperiment.from_experiment_name('supervised',detector=[metric1])
 
-    data = load(datatype, llmname, cut_length=cut_length, task=task)
+    data = load(datatype, llmname, cut_length=cut_length, task=task, match=match_data)
     data['train']['text'] = data['train']['text'][:size]
     data['train']['label'] = data['train']['label'][:size]
-    # data['test']['text'] = data['test']['text'][:size]
-    # data['test']['label'] = data['test']['label'][:size]
+    # given size may be larger than the maximum length of the dataset, record the maximum length
+    max_len = len(data['train']['text'])
+    if size > max_len:
+        print(f"Warning: data_size {size} is larger than the maximum length {max_len} of the dataset. Using the maximum length instead.")
+        size = max_len
 
     experiment.load_data(data)
     res = experiment.launch(**config)
@@ -115,5 +122,5 @@ if __name__ == '__main__':
         if cur_f1 > best:
             print('Saving model')
             save_path = '/data1/zzy/finetuned'
-            name = f'{datatype}_{llmname}_{task}_{args.model}'
+            name = f'{datatype}_{llmname}_{task}{match_tag}_{args.model}'
             metric1.model.save_pretrained(f'{save_path}/{name}')
