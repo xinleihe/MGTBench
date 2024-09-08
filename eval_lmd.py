@@ -19,7 +19,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, choices=category, default="Art")
     parser.add_argument('--detectLLM', type=str, choices=llms, default="Moonshot")
-    parser.add_argument('--task', type=str, choices=['old', 'task2','task2_gen', 'task3'],)
+    parser.add_argument('--task', type=str, choices=['old', 'task2','task2_gen', 'task3'])
+    parser.add_argument('--match_data', type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument('--gpu', type=int, default=4)
     parser.add_argument('--all', action='store_true')
     args = parser.parse_args()
@@ -27,11 +28,13 @@ if __name__ == '__main__':
     dataset = args.dataset
     detectLLM = args.detectLLM
     task = args.task
+    match_data = args.match_data
     eval_all = args.all
 
     os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
 
-    with open(f'{task}_best/best_hyperparams.json', 'r') as f:
+    match_tag = '_match' if match_data else ''
+    with open(f'{task}_best/best_hyperparams{match_tag}.json', 'r') as f:
         best_hyperparams = json.load(f)
 
     if eval_all:
@@ -49,9 +52,10 @@ if __name__ == '__main__':
                         f"--seed {seed} " \
                         f"--task {task} " \
                         f"--folder test " \
+                        f"--match_data {match_data} " \
                         f"--eval"
                 subprocess.run(command, shell=True)
-                time.sleep(2)
+                time.sleep(1)
                 torch.cuda.empty_cache()
 
     else:
@@ -67,5 +71,6 @@ if __name__ == '__main__':
                 f"--seed {seed} " \
                 f"--task {task} " \
                 f"--folder test " \
+                f"--match_data {match_data} " \
                 f"--eval"
         subprocess.run(command, shell=True)

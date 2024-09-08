@@ -53,17 +53,18 @@ if __name__ == '__main__':
     else:
         raise ValueError(f'{folder} already exists')
 
+    match_tag = '_match' if match_data else ''
     # maintain the best f1 for each category and detectLLM
     if previous_best:
-        assert os.path.exists(f'{which_task}_best/best_f1.json')
-        assert os.path.exists(f'{which_task}_best/best_hyperparams.json')
-        with open(f'{which_task}_best/best_f1.json', 'r') as f:
+        assert os.path.exists(f'{which_task}_best/best_f1{match_tag}.json')
+        assert os.path.exists(f'{which_task}_best/best_hyperparams{match_tag}.json')
+        with open(f'{which_task}_best/best_f1{match_tag}.json', 'r') as f:
             best_f1 = json.load(f)
-        with open(f'{which_task}_best/best_hyperparams.json', 'r') as f:
+        with open(f'{which_task}_best/best_hyperparams{match_tag}.json', 'r') as f:
             best_hyperparams = json.load(f)
     else:
-        assert os.path.exists(f'{which_task}_best/best_f1.json') == False
-        assert os.path.exists(f'{which_task}_best/best_hyperparams.json') == False
+        assert os.path.exists(f'{which_task}_best/best_f1{match_tag}.json') == False
+        assert os.path.exists(f'{which_task}_best/best_hyperparams{match_tag}.json') == False
         best_f1 = {}
         for cat in category:
             best_f1[cat] = 0
@@ -84,65 +85,73 @@ if __name__ == '__main__':
             results[cat] = {llm: []}
 
     # run all the experiments
+    cnt = 0
     for cat in category:
-        for llmname in llms:
+        for detectLLM in llms:
             for cut_length in cut_sizes:
                 for num_data in data_sizes:
                     for seed in seeds:
-                        command = f"python run_lm.py --dataset {cat} --detectLLM {llmname} --model {model} --cut_length {cut_length} --data_size {num_data} --seed {seed} --save {save} --task {which_task} --best {best_f1[cat][llmname]} --folder {folder}"
+                        command = f'python run_lm.py ' \
+                                    f'--dataset {cat} ' \
+                                    f'--detectLLM {detectLLM} ' \
+                                    f'--model {model} ' \
+                                    f'--cut_length {cut_length} ' \
+                                    f'--data_size {num_data} ' \
+                                    f'--seed {seed} ' \
+                                    f'--save {save} ' \
+                                    f'--task {which_task} ' \
+                                    f'--best {best_f1[cat][detectLLM]} ' \
+                                    f'--folder {folder} ' \
+                                    f'--match_data {match_data} '
                         subprocess.run(command, shell=True)
-                        # check f1 to decide whether to save the model
-                        time.sleep(2)
+                        time.sleep(1)
+                        cnt += 1
+
                         # the script will serialize the result to a temp .json file (experiment.json)
                         try:
                             with open(f'{folder}/experiment.json', 'r') as f:
                                 temp = json.load(f)
-                                results[cat][llmname].append(temp)
+                                results[cat][detectLLM].append(temp)
                         except Exception as e:
                             print(e)
                             continue
+                        
                         # save intermediate results 
-                        subject_results = {'task': which_task,
-                                           'category': cat,
-                                           'detectLLM': llmname,
-                                           'model': model,
-                                           'match': match_data,
-                                           'results': results[cat][llmname]
-                                           }
-                        with open(f'{folder}/{cat}_{llmname}.json', 'w') as f:
-                            json.dump(subject_results, f)
+                        if cnt % 10 == 0: 
+                            print(f'Finished {cnt} experiments')
+                            subject_results = {'task': which_task,
+                                            'category': cat,
+                                            'detectLLM': detectLLM,
+                                            'model': model,
+                                            'match': match_data,
+                                            'results': results[cat][detectLLM]
+                                            }
+                            with open(f'{folder}/{cat}_{detectLLM}.json', 'w') as f:
+                                json.dump(subject_results, f)
 
+                        # check f1 to decide whether to save the best hyperparameters
                         cur_f1 = round(temp['test']['f1'], 4)
-                        if cur_f1 > best_f1[cat][llmname]:
-                            best_f1[cat][llmname] = cur_f1
-                            best_hyperparams[cat][llmname] = {'model': model, 'seed': seed, 'cut_length': cut_length, 'num_data': num_data, 'f1': cur_f1}
+                        if cur_f1 > best_f1[cat][detectLLM]:
+                            best_f1[cat][detectLLM] = cur_f1
+                            # num data may exceed the actual max data length, record the actual one from experiment.json
+                            best_hyperparams[cat][detectLLM] = {'model': model, 'seed': seed, 'cut_length': cut_length, 'num_data': temp['data_size'], 'f1': cur_f1}
 
-                            with open(f'{which_task}_best/best_f1.json', 'w') as f:
+                            with open(f'{which_task}_best/best_f1{match_tag}.json', 'w') as f:
                                 json.dump(best_f1, f)
-                            with open(f'{which_task}_best/best_hyperparams.json', 'w') as f:
+                            with open(f'{which_task}_best/best_hyperparams{match_tag}.json', 'w') as f:
                                 json.dump(best_hyperparams, f)
 
+            # save results for each category and detectLLM
+            subject_results = {'task': which_task,
+                            'category': cat,
+                            'detectLLM': detectLLM,
+                            'model': model,
+                            'match': match_data,
+                            'results': results[cat][detectLLM]
+                            }
+            with open(f'{folder}/{cat}_{detectLLM}.json', 'w') as f:
+                json.dump(subject_results, f)
 
     # save the results for ablation study
     with open(f'{folder}/results.json', 'w') as f:
         json.dump(results, f)
-
-                        # read result
-                        # with open(os.path.join(folder, f'{cat}_{llmname}.txt'), 'r') as file:
-                        #     lines = file.readlines()
-                        #     line = lines[-1]
-                        #     matches = re.findall(r"(f1)=([\d\.]+)", line)
-                        #     try:
-                        #         f1_score = round(float(matches[0][1]), 3)
-                        #         if f1_score > best_f1[cat][llmname]:
-                        #             best_f1[cat][llmname] = f1_score
-                        #             best_hyperparams[cat][llmname] = [model, seed, cut_length, num_data, f1_score]
-
-                        #             with open(f'{folder}/best_f1.json', 'w') as f:
-                        #                 json.dump(best_f1, f)
-                        #             with open(f'{folder}/best_hyperparams.json', 'w') as f:
-                        #                 json.dump(best_hyperparams, f)
-
-                        #     except Exception as e:
-                        #         print(e)
-                                
