@@ -200,7 +200,7 @@ def load_NarrativeQA(detectLLM):
     return data_new
 
 
-def load(name, detectLLM, task='task2', cut_length=3000, disable=False, seed=0):
+def load(name, detectLLM, task='task2', cut_length=3000, disable=True, seed=0, match=False):
 
     if name in ['TruthfulQA', 'SQuAD1', 'NarrativeQA']:
         load_fn = globals()[f'load_{name}']
@@ -273,21 +273,40 @@ def load(name, detectLLM, task='task2', cut_length=3000, disable=False, seed=0):
                     mgt_data += js
     
         # data mix up
-        smaller_len = min([len(subject_human_data), len(mgt_data)])
-        subject_human_data = subject_human_data.shuffle(seed)
         all_data = []
-        for i in range(smaller_len): # 50:50
-            all_data.append({'text': subject_human_data[i]['text'], 'label': 0})
+        smaller_len = min([len(subject_human_data), len(mgt_data)])
 
-            if task == 'task2':
-                ai_complete = mgt_data[i]['prompt'].splitlines()[-2].strip('\"') + mgt_data[i]['generated_text'] # concat generated text with first half 
-                all_data.append({'text': ai_complete, 'label': 1})
-            elif task == 'task2_gen':
-                all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
-            elif task == 'task3':
-                all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
-            else:
-                raise ValueError(f'Unknown task {task}')
+        if match:
+
+            for i in range(smaller_len):
+                if task == 'task2':
+                    raise ValueError(f'do not consider task2 for now')
+                    # ai_complete = mgt_data[i]['prompt'].splitlines()[-2].strip('\"') + mgt_data[i]['generated_text']
+                    # all_data.append({'text': ai_complete, 'label': 1})
+                elif task == 'task2_gen':
+                    all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
+                elif task == 'task3':
+                    all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
+                else:
+                    raise ValueError(f'Unknown task {task}')
+
+                # find corresponding human data by id, cannot shuffle
+                all_data.append({'text': subject_human_data[mgt_data[i]['id']]['text'], 'label': 0})
+
+        else:
+            subject_human_data = subject_human_data.shuffle(seed)
+            for i in range(smaller_len): # 50:50
+                if task == 'task2':
+                    ai_complete = mgt_data[i]['prompt'].splitlines()[-2].strip('\"') + mgt_data[i]['generated_text'] # concat generated text with first half 
+                    all_data.append({'text': ai_complete, 'label': 1})
+                elif task == 'task2_gen':
+                    all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
+                elif task == 'task3':
+                    all_data.append({'text': mgt_data[i]['generated_text'], 'label': 1})
+                else:
+                    raise ValueError(f'Unknown task {task}')
+                
+                all_data.append({'text': subject_human_data[i]['text'], 'label': 0})
 
         # temp: trim text to 
         for i in range(len(all_data)):
