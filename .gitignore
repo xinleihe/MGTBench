@@ -179,3 +179,4 @@ logs/
 figs/
 draw_utils/
 update_results/
+*.pth

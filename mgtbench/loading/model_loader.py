@@ -143,7 +143,7 @@ def load_pretrained_mask(model_name_or_path, quantization_bit=None) -> Tuple[Pre
 
     return model, tokenizer
 
-def load_pretrained_supervise(model_name_or_path, quantization_bit=None) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
+def load_pretrained_supervise(model_name_or_path, kargs, quantization_bit=None) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
     r"""
     Loads pretrained model and tokenizer.
 
@@ -153,6 +153,8 @@ def load_pretrained_supervise(model_name_or_path, quantization_bit=None) -> Tupl
         "trust_remote_code": True,
     } 
     config = AutoConfig.from_pretrained(model_name_or_path, **config_kwargs)
+    if 'num_labels' in kargs:
+        config.num_labels = kargs['num_labels']
     config_kwargs["device_map"] = "cuda"
 
 
@@ -168,9 +170,9 @@ def load_pretrained_supervise(model_name_or_path, quantization_bit=None) -> Tupl
         n_positions = model.config.n_positions
     except AttributeError:
         n_positions = 512
-
+    tokenizer_path = kargs.get("tokenizer_path", model_name_or_path)
     tokenizer = AutoTokenizer.from_pretrained(
-        model_name_or_path,
+        tokenizer_path,
         use_fast=True,
         model_max_length=n_positions,
         trust_remote_code=True

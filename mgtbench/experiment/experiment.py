@@ -105,7 +105,6 @@ class SupervisedConfig:
     need_save:bool=True
     batch_size:int=16
     pos_bit:int=1
-    num_labels:int=2
     epochs:int=3
     save_path:str='finetuned/'
 
@@ -121,7 +120,6 @@ class SupervisedExperiment(BaseExperiment):
         need_save:bool=True
         batch_size:int=16
         pos_bit:int=1
-        num_labels:int=2
         epochs:int=3
         save_path:str='finetuned/'
     '''
