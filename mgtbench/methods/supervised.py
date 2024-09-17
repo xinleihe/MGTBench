@@ -9,6 +9,10 @@ from ..auto import BaseDetector
 from ..loading import load_pretrained_supervise
 from sklearn.model_selection import train_test_split
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
+from transformers import Trainer, TrainingArguments, AdamW
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
 class CustomDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
         self.encodings = encodings
@@ -33,12 +37,9 @@ class SupervisedDetector(BaseDetector):
             if not model_name_or_path :
                 raise ValueError('You should pass the model_name_or_path or a model instance, but none is given')
             quantitize_bit = kargs.get('load_in_k_bit', None)
-            self.model, self.tokenizer = load_pretrained_supervise(model_name_or_path, quantitize_bit)
+            self.model, self.tokenizer = load_pretrained_supervise(model_name_or_path, kargs,quantitize_bit)
         if not isinstance(self.model, PreTrainedModel) or not isinstance(self.tokenizer, PreTrainedTokenizerBase):
             raise ValueError('Expect PreTrainedModel, PreTrainedTokenizer, got', type(self.model), type(self.tokenizer))
-        if ("state_dict_path" in kargs) and ("state_dict_key" in kargs):
-            self.model.load_state_dict(
-                torch.load(kargs["state_dict_path"],map_location='cpu')[kargs["state_dict_key"]])
         
     def detect(self, text, **kargs):
         result = []
@@ -58,43 +59,40 @@ class SupervisedDetector(BaseDetector):
         return result if isinstance(text, list) else result[0]
     
     def finetune(self, data, config):
-        batch_size = config.batch_size
-        num_epochs = config.epochs
-        save_path = config.save_path
         if config.pos_bit == 0:
-            train_label = [1 if _ == 0 else 0 for _ in data['label']]
+            data['label'] = [1 if label == 0 else 0 for label in data['label']]
 
+        # Tokenize the data
         train_encodings = self.tokenizer(data['text'], truncation=True, padding=True)
         train_dataset = CustomDataset(train_encodings, data['label'])
 
-        self.model.train()
-        train_loader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=True)
-        no_decay = ['bias', 'LayerNorm.weight']
-        optimizer_grouped_parameters = [
-            {'params': [p for n, p in self.model.named_parameters() if not any(
-                nd in n for nd in no_decay)], 'weight_decay': 0.01},
-            {'params': [p for n, p in self.model.named_parameters() if any(
-                nd in n for nd in no_decay)], 'weight_decay': 0.0}
-        ]
-        optimizer = AdamW(optimizer_grouped_parameters, lr=1e-5)
+        # Define the training arguments
+        training_args = TrainingArguments(
+            output_dir=config.save_path,              # Output directory
+            num_train_epochs=config.epochs,           # Number of epochs
+            per_device_train_batch_size=config.batch_size,  # Batch size
+            evaluation_strategy="no",                # Evaluation strategy
+            save_strategy="epoch",                   # Save after each epoch
+            logging_dir='./logs',                    # Directory for logs
+            logging_steps=100,                       # Log every 100 steps
+            weight_decay=0.01,                       # Weight decay
+            learning_rate=1e-5,                      # Learning rate
+            save_total_limit=2,                      # Limit to save only the best checkpoints
+            load_best_model_at_end=True if config.need_save else False  # Save best model
+        )
 
-        for epoch in range(num_epochs):
-            running_loss = 0.0
-            for batch in tqdm(train_loader, desc=f"Fine-tuning: {epoch} epoch"):
-                optimizer.zero_grad()
-                input_ids = batch['input_ids'].to(self.model.device)
-                attention_mask = batch['attention_mask'].to(self.model.device)
-                labels = batch['labels'].to(self.model.device)
-                outputs = self.model(
-                    input_ids, attention_mask=attention_mask, labels=labels)
-                loss = outputs[0]
-                loss.backward()
-                running_loss += loss.item()
-                optimizer.step()
-            epoch_loss = running_loss / len(train_dataset)
-            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss}")
-        self.model.eval()
+        # Initialize the Trainer
+        trainer = Trainer(
+            model=self.model,
+            args=training_args,
+            train_dataset=train_dataset,
+            tokenizer=self.tokenizer,
+            optimizers=(AdamW(self.model.parameters(), lr=1e-5), None)  # Optimizer, lr_scheduler
+        )
+
+        # Train the model
+        trainer.train()
+
+        # Save the model if needed
         if config.need_save:
-            self.model.save_pretrained(f'{save_path}/{self.name}')
-
+            self.model.save_pretrained(f'{config.save_path}/{self.name}')
