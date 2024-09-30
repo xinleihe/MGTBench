@@ -24,7 +24,7 @@ class ThresholdExperiment(BaseExperiment):
                 print(detector.name, 'is not for this experiment')
                 continue
             print('Predict training data')
-            x_train, y_train = self.data_prepare(detector.detect(self.train_text), self.train_label)
+            x_train, y_train = self.data_prepare(detector.detect(self.train_text), self.train_label, True)
             print('Predict testing data')
             x_test, y_test = self.data_prepare(detector.detect(self.test_text), self.test_label)
             print('Run classification for results')
@@ -87,7 +87,7 @@ class PerturbExperiment(BaseExperiment):
 
             self.perturb_config.update(kargs)
             print('Predict training data')
-            x_train, y_train = self.data_prepare(detector.detect(self.train_text, self.train_label, self.perturb_config),self.train_label)
+            x_train, y_train = self.data_prepare(detector.detect(self.train_text, self.train_label, self.perturb_config),self.train_label, True)
             print('Predict testing data')
             x_test, y_test   = self.data_prepare(detector.detect(self.test_text, self.test_label, self.perturb_config), self.test_label)
             print('Run classification for results')
