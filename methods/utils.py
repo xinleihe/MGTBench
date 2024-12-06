@@ -75,9 +75,9 @@ def load_base_model_and_tokenizer(name, cache_dir):
 
     print(f'Loading BASE model {name}...')
     base_model = transformers.AutoModelForCausalLM.from_pretrained(
-        name, cache_dir=cache_dir)
+        name)
     base_tokenizer = transformers.AutoTokenizer.from_pretrained(
-        name, cache_dir=cache_dir)
+        name)
     base_tokenizer.pad_token_id = base_tokenizer.eos_token_id
 
     return base_model, base_tokenizer
