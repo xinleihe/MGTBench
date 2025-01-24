@@ -56,11 +56,11 @@ The tool is designed and developed by Xinlei He (CISPA), Xinyue Shen (CISPA), Ze
 If you use MGTBench for your research, please cite [MGTBench: Benchmarking Machine-Generated Text Detection](https://arxiv.org/abs/2303.14822).
 
 ```
-bibtex
-@article{HSCBZ23,
+@inproceedings{HSCBZ24,
 author = {Xinlei He and Xinyue Shen and Zeyuan Chen and Michael Backes and Yang Zhang},
 title = {{MGTBench: Benchmarking Machine-Generated Text Detection}},
-journal = {{CoRR abs/2303.14822}},
-year = {2023}
+booktitle = {{ACM SIGSAC Conference on Computer and Communications Security (CCS)}},
+publisher = {ACM},
+year = {2024}
 }
 ```
